@@ -1,0 +1,3025 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budgetbeheer v23</title>
+<style>
+  :root{
+    --bg:#F5F6F8;
+    --card:#FFFFFF;
+    --border:#E2E5EA;
+    --text:#1E2530;
+    --text-muted:#64748B;
+    --primary:#2A5C8A;
+    --primary-dark:#1E4468;
+    --positive:#1D7A4C;
+    --positive-bg:#E7F5EE;
+    --negative:#B3261E;
+    --negative-bg:#FBEAE9;
+    --accent-fixed:#2A5C8A;
+    --accent-variable:#7C8DA6;
+    --accent-income:#1D7A4C;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.4;
+  }
+  header{
+    background:var(--primary-dark);
+    color:#fff;
+    padding:20px 24px;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  header h1{
+    margin:0;
+    font-size:1.4rem;
+    font-weight:600;
+    letter-spacing:.2px;
+  }
+  header p{
+    margin:4px 0 0;
+    font-size:.85rem;
+    color:#C9D6E3;
+  }
+  .header-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .print-btn{
+    background:#fff;
+    color:var(--primary-dark);
+    border:none;
+    padding:9px 16px;
+    border-radius:6px;
+    font-size:.85rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .print-btn:hover{ background:#EAF0F5; }
+  .print-btn.danger-btn{ color:var(--negative); }
+  .print-btn.danger-btn:hover{ background:#FBEAEA; }
+
+  /* Maandbalk */
+  .month-bar{
+    max-width:1100px;
+    margin:16px auto 0;
+    padding:0 20px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .month-bar label{
+    font-size:.8rem;
+    color:var(--text-muted);
+  }
+  .month-bar input[type="month"]{
+    padding:7px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:.9rem;
+    font-family:inherit;
+    background:#fff;
+  }
+  .nav-btn{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:7px 12px;
+    font-size:.85rem;
+    cursor:pointer;
+    color:var(--text);
+  }
+  .nav-btn:hover{ background:#EEF3F8; }
+
+  .layout{
+    max-width:1100px;
+    margin:0 auto;
+    padding:20px;
+    display:grid;
+    grid-template-columns:1.6fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+  }
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translateX(-50%) translateY(10px);
+    background:var(--text);
+    color:#fff;
+    padding:10px 16px;
+    border-radius:8px;
+    font-size:.82rem;
+    box-shadow:0 4px 14px rgba(0,0,0,.2);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:999;
+    max-width:90vw;
+    text-align:center;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  .undo-bar{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translateX(-50%) translateY(10px);
+    background:var(--text);
+    color:#fff;
+    padding:10px 10px 10px 16px;
+    border-radius:8px;
+    font-size:.82rem;
+    box-shadow:0 4px 14px rgba(0,0,0,.2);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:1000;
+    max-width:90vw;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .undo-bar.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+    pointer-events:auto;
+  }
+  .undo-bar button{
+    background:rgba(255,255,255,.15);
+    color:#fff;
+    border:none;
+    padding:6px 12px;
+    border-radius:6px;
+    font-weight:600;
+    font-size:.8rem;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .undo-bar button:hover{ background:rgba(255,255,255,.28); }
+  .secret-warning{
+    font-size:.75rem;
+    color:var(--negative);
+    background:var(--negative-bg);
+    border-radius:6px;
+    padding:6px 10px;
+    margin-top:6px;
+    display:none;
+  }
+  .secret-warning.show{ display:block; }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    margin-bottom:18px;
+  }
+  .card h2{
+    font-size:1rem;
+    margin:0 0 4px;
+    font-weight:600;
+  }
+  .collapsible-card > h2{
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    user-select:none;
+  }
+  .collapsible-card > h2:hover{ color:var(--primary-dark); }
+  .collapsible-card > h2::after{
+    content:'▾';
+    font-size:.7em;
+    color:var(--text-muted);
+    flex:0 0 auto;
+    transition:transform .15s ease;
+  }
+  .collapsible-card.collapsed > h2{ margin-bottom:0; }
+  .collapsible-card.collapsed > h2::after{ transform:rotate(-90deg); }
+  @media screen{
+    .collapsible-card.collapsed > *:not(h2){ display:none !important; }
+  }
+  .card-collapse-controls{
+    display:flex;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:10px 0 -4px;
+  }
+  .card-collapse-controls button{
+    background:none;
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:.72rem;
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .card-collapse-controls button:hover{ background:#EEF3F8; color:var(--text); }
+  .card .sub{
+    font-size:.8rem;
+    color:var(--text-muted);
+    margin:0 0 14px;
+  }
+  /* Dashboard KPI-kaarten */
+  .dashboard-kpis{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+    margin:0 0 20px;
+  }
+  .kpi-card{
+    position:relative;
+    padding:14px 15px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#fff;
+    overflow:hidden;
+  }
+  .kpi-card::before{
+    content:'';
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:4px;
+    background:var(--primary);
+  }
+  .kpi-card.income::before{background:var(--positive);}
+  .kpi-card.fixed::before{background:var(--accent-fixed);}
+  .kpi-card.variable::before{background:var(--accent-variable);}
+  .kpi-card.balance::before{background:var(--positive);}
+  .kpi-label{
+    display:block;
+    font-size:.72rem;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.35px;
+    margin-bottom:4px;
+  }
+  .kpi-value{display:block;font-size:1.2rem;font-weight:700;color:var(--text);}
+  .kpi-card.balance .kpi-value{color:var(--positive);}
+  .kpi-card.balance.negative .kpi-value{color:var(--negative);}
+
+  /* Invoer voelt meer als een compacte app-rij */
+  .input-hints{
+    display:grid;
+    grid-template-columns:1fr 140px 32px;
+    gap:8px;
+    margin:0 0 7px;
+    color:var(--text-muted);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.35px;
+  }
+  .input-hints span:nth-child(2){text-align:left;}
+  .input-hints span:nth-child(3){visibility:hidden;}
+  .row input, .row-cat input{transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;}
+  .row input:not(:placeholder-shown), .row-cat input:not(:placeholder-shown){background:#FCFDFE;}
+  .row input:focus, .row-cat input:focus{background:#fff;}
+  .row .remove-btn, .row-cat .remove-btn{transition:all .15s ease;}
+  @media (max-width:760px){
+    .dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .input-hints{display:none;}
+  }
+
+  .row{
+    display:grid;
+    grid-template-columns:1fr 140px 32px;
+    gap:8px;
+    align-items:start;
+    margin-bottom:8px;
+  }
+  .row input[type="text"], .row input[type="number"]{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:.9rem;
+    font-family:inherit;
+    color:var(--text);
+  }
+  .row input:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 2px rgba(42,92,138,.15);
+  }
+  .row input.invalid{
+    border-color:var(--negative);
+    box-shadow:0 0 0 2px rgba(179,38,30,.12);
+  }
+  .row .remove-btn{
+    background:none;
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-size:.9rem;
+    height:36px;
+    width:32px;
+  }
+  .row .remove-btn:hover{
+    background:var(--negative-bg);
+    color:var(--negative);
+    border-color:var(--negative);
+  }
+  .add-btn{
+    background:#fff;
+    border:1px dashed var(--primary);
+    color:var(--primary);
+    padding:8px 14px;
+    border-radius:6px;
+    font-size:.85rem;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .add-btn:hover{ background:#EEF3F8; }
+  .section-total{
+    text-align:right;
+    font-size:.85rem;
+    color:var(--text-muted);
+    margin-top:10px;
+    border-top:1px dashed var(--border);
+    padding-top:8px;
+  }
+  .section-total strong{
+    color:var(--text);
+    font-size:.95rem;
+  }
+  .single-field label{
+    display:block;
+    font-size:.85rem;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .single-field input{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:.95rem;
+    font-family:inherit;
+  }
+  .summary{
+    position:sticky;
+    top:20px;
+    align-self:start;
+  }
+  .summary-line{
+    display:flex;
+    justify-content:space-between;
+    font-size:.88rem;
+    padding:6px 0;
+    color:var(--text-muted);
+  }
+  .summary-line.total{
+    border-top:1px solid var(--border);
+    margin-top:6px;
+    padding-top:10px;
+    font-size:1rem;
+    color:var(--text);
+    font-weight:600;
+  }
+  .balance-box{
+    margin-top:14px;
+    padding:14px;
+    border-radius:8px;
+    text-align:center;
+  }
+  .balance-box.positive{ background:var(--positive-bg); color:var(--positive); }
+  .balance-box.negative{ background:var(--negative-bg); color:var(--negative); }
+  .balance-box .amount{ font-size:1.5rem; font-weight:700; display:block; }
+  .balance-box .label{ font-size:.78rem; text-transform:uppercase; letter-spacing:.4px; }
+  .bar-wrap{ margin-top:16px; }
+  .bar-label{ display:flex; justify-content:space-between; font-size:.75rem; color:var(--text-muted); margin-bottom:4px; }
+  .bar-track{ height:14px; border-radius:7px; background:var(--border); overflow:hidden; display:flex; }
+  .bar-fill-fixed{ background:var(--accent-fixed); height:100%; }
+  .bar-fill-variable{ background:var(--accent-variable); height:100%; }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:.72rem; color:var(--text-muted); margin-top:8px; }
+  .legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .dot{ width:8px;height:8px;border-radius:50%;display:inline-block; }
+  .savings-result{
+    margin-top:14px;
+    font-size:.85rem;
+    padding:10px 12px;
+    background:#F0F4F8;
+    border-radius:8px;
+    color:var(--text);
+  }
+  .savings-result strong{ display:block; font-size:1.1rem; margin-top:2px; }
+  .savings-hint{
+    font-size:.72rem;
+    color:var(--text-muted);
+    margin-top:6px;
+  }
+
+  .plan-row{
+    display:grid;
+    grid-template-columns:1fr 140px;
+    gap:8px;
+    align-items:center;
+    margin-bottom:6px;
+  }
+  .plan-row span{
+    font-size:.88rem;
+    color:var(--text);
+  }
+  .plan-row span.current-month-label{
+    font-weight:600;
+    color:var(--primary-dark);
+  }
+  .plan-row input[type="number"]{
+    width:100%;
+    padding:7px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:.9rem;
+    font-family:inherit;
+  }
+
+  /* Planningmodule (toekomstige in-/uitgaven) */
+  .plan-item-row{
+    display:grid;
+    grid-template-columns:1.4fr 100px 110px 120px 120px 32px;
+    gap:6px;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  @media (max-width:760px){
+    .plan-item-row{
+      grid-template-columns:1fr 1fr;
+    }
+    .plan-item-row .plan-name-field{ grid-column:1 / -1; }
+  }
+  .plan-item-row input, .plan-item-row select{
+    width:100%;
+    padding:7px 8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:.85rem;
+    font-family:inherit;
+    color:var(--text);
+  }
+  .forecast-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.82rem;
+  }
+  .forecast-table th, .forecast-table td{
+    text-align:right;
+    padding:6px 6px;
+    border-bottom:1px solid var(--border);
+  }
+  .forecast-table th:first-child, .forecast-table td:first-child{ text-align:left; }
+  .forecast-table th{
+    color:var(--text-muted);
+    font-weight:600;
+    font-size:.72rem;
+    text-transform:uppercase;
+  }
+  .forecast-table td.negative-cell{ color:var(--negative); font-weight:600; }
+
+  /* Rijen met categorie (vaste/variabele lasten) */
+  .row-cat{
+    display:grid;
+    grid-template-columns:1fr 120px 140px 32px;
+    gap:8px;
+    align-items:start;
+    margin-bottom:8px;
+  }
+  @media (max-width:600px){
+    .row-cat{ grid-template-columns:1fr 1fr; }
+    .row-cat .cat-name-field{ grid-column:1 / -1; }
+    .cm-header-row{ display:none; }
+    .cm-row{
+      grid-template-columns:1fr;
+      gap:6px;
+      padding:10px 2px;
+    }
+    .cm-budget-input-wrap{ max-width:140px; }
+  }
+  .row-cat input[type="text"], .row-cat input[type="number"]{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:.9rem;
+    font-family:inherit;
+    color:var(--text);
+  }
+  .row-cat input:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 2px rgba(42,92,138,.15);
+  }
+  .row-cat input.invalid{
+    border-color:var(--negative);
+    box-shadow:0 0 0 2px rgba(179,38,30,.12);
+  }
+
+  /* Dashboard: categorieverdeling */
+  .donut-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+  }
+  @media (max-width:600px){
+    .donut-grid{ grid-template-columns:1fr; }
+  }
+  .donut-block h3{
+    font-size:.78rem;
+    color:var(--text-muted);
+    margin:0 0 10px;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    font-weight:600;
+  }
+  .donut-wrap{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .donut-legend{
+    flex:1;
+    min-width:140px;
+    font-size:.8rem;
+  }
+  .donut-legend-item{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    padding:3px 0;
+    color:var(--text);
+  }
+  .donut-legend-item .cat-name{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--text-muted);
+  }
+  .cat-bar-row{
+    margin-bottom:10px;
+  }
+  .cat-bar-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:.82rem;
+    margin-bottom:4px;
+  }
+  .cat-bar-label .cat-name{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--text);
+  }
+  .cat-bar-label .cat-amount{
+    color:var(--text-muted);
+  }
+  .cat-bar-track{
+    height:10px;
+    border-radius:5px;
+    background:var(--border);
+    overflow:hidden;
+  }
+  .cat-bar-fill{
+    height:100%;
+    border-radius:5px;
+    transition:width .25s ease;
+  }
+
+  /* Jaaroverzicht (trendgrafiek) */
+  .trend-svg{ width:100%; height:auto; display:block; }
+  .trend-svg circle{ cursor:default; }
+  .trend-legend{
+    display:flex;
+    gap:16px;
+    justify-content:center;
+    margin-top:8px;
+    font-size:.78rem;
+    color:var(--text-muted);
+  }
+  .trend-legend span{ display:flex; align-items:center; gap:6px; }
+
+  /* Categorieën & budgetten */
+  .cm-header-row{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1.6fr;
+    gap:12px;
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--text-muted);
+    font-weight:600;
+    padding:0 2px 8px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:6px;
+  }
+  .cm-row{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1.6fr;
+    gap:12px;
+    align-items:center;
+    padding:7px 2px;
+    border-bottom:1px solid var(--border);
+  }
+  .cm-row:last-child{ border-bottom:none; }
+  .cm-name-input{
+    border:1px solid transparent;
+    background:transparent;
+    font-size:.85rem;
+    font-weight:600;
+    color:var(--text);
+    padding:5px 6px;
+    border-radius:6px;
+    min-width:0;
+  }
+  .cm-name-input:hover{ border-color:var(--border); }
+  .cm-name-input:focus{ border-color:var(--primary); background:#fff; outline:none; }
+  .cm-budget-input-wrap{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:0 8px;
+  }
+  .cm-budget-input-wrap span{ color:var(--text-muted); font-size:.8rem; }
+  .cm-budget-input{
+    border:none;
+    background:transparent;
+    padding:6px 0;
+    font-size:.85rem;
+    width:100%;
+    min-width:0;
+  }
+  .cm-budget-input:focus{ outline:none; }
+  .cm-progress{ font-size:.74rem; }
+  .cm-progress-track{
+    height:7px;
+    border-radius:4px;
+    background:var(--border);
+    overflow:hidden;
+    margin-bottom:3px;
+  }
+  .cm-progress-fill{ height:100%; border-radius:4px; transition:width .25s ease; }
+  .cm-progress-fill.cm-ok{ background:var(--positive); }
+  .cm-progress-fill.cm-warn{ background:#D9A441; }
+  .cm-progress-fill.cm-over{ background:var(--negative); }
+  .cm-progress-label{ color:var(--text-muted); }
+  .cm-no-budget{ color:var(--text-muted); font-style:italic; }
+
+  .cat-toggle-btn{
+    background:none;
+    border:none;
+    color:var(--primary);
+    font-size:.78rem;
+    font-weight:600;
+    padding:8px 0 0;
+    cursor:pointer;
+  }
+  .cat-toggle-btn:hover{ text-decoration:underline; }
+
+  /* Selecteerbare grafiekonderdelen (donutsegment, legenda-item, balkje) */
+  .donut-wrap svg circle.cd-segment{ cursor:pointer; transition:opacity .15s ease; }
+  .donut-legend-item, .cat-bar-row{ cursor:pointer; border-radius:6px; transition:opacity .15s ease, background .15s ease; }
+  .donut-legend-item:hover, .cat-bar-row:hover{ background:#F0F4F8; }
+  [data-cd-id].cd-dim{ opacity:.35; }
+  .donut-legend-item.cd-active{ background:#E4ECF5; }
+  .cat-bar-row.cd-active{ background:#E4ECF5; }
+  .cat-bar-row{ padding:2px 4px; margin-left:-4px; margin-right:-4px; }
+
+  .category-detail-panel{
+    margin-top:16px;
+    padding:12px 14px;
+    background:#F7F9FB;
+    border:1px solid var(--border);
+    border-radius:8px;
+  }
+  .category-detail-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .category-detail-header h3{
+    margin:0;
+    font-size:.85rem;
+    color:var(--text);
+  }
+  .cd-close-btn{
+    background:none;
+    border:none;
+    font-size:.9rem;
+    color:var(--text-muted);
+    cursor:pointer;
+    padding:2px 6px;
+    line-height:1;
+  }
+  .cd-close-btn:hover{ color:var(--text); }
+  .cd-item-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:.8rem;
+    padding:4px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .cd-item-row:last-child{ border-bottom:none; }
+  .cd-item-subcat{ color:var(--text-muted); font-size:.72rem; }
+  .cd-item-total{
+    font-weight:700;
+    border-top:1px solid var(--border);
+    border-bottom:none;
+    margin-top:4px;
+    padding-top:8px;
+  }
+  .donut-legend-item .cat-name,
+  .cat-bar-label .cat-name{
+    flex:1;
+    min-width:0;
+  }
+  .cat-bar-label{ gap:8px; }
+  .cat-bar-label .cat-amount{ flex:0 0 auto; }
+  .cat-name-text{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    min-width:0;
+  }
+
+  /* Historie */
+  .history-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.82rem;
+  }
+  .history-table th, .history-table td{
+    text-align:right;
+    padding:7px 6px;
+    border-bottom:1px solid var(--border);
+  }
+  .history-table th:first-child, .history-table td:first-child{
+    text-align:left;
+  }
+  .history-table th{
+    color:var(--text-muted);
+    font-weight:600;
+    font-size:.75rem;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .history-table tr.current-row{
+    background:#EEF3F8;
+  }
+  .history-table td.negative-cell{ color:var(--negative); font-weight:600; }
+  .history-empty{
+    font-size:.82rem;
+    color:var(--text-muted);
+  }
+
+  footer{
+    text-align:center;
+    font-size:.72rem;
+    color:var(--text-muted);
+    padding:16px;
+  }
+
+  /* Print-only kerncijferblok (zie print_summary hierboven): op scherm altijd verborgen. */
+  .print-summary{ display:none; }
+  .footer-print-text{ display:none; }
+
+  /* Print / PDF-export: compacte, rapportachtige indeling met nette paginabreuks */
+  @media print{
+    @page{ size:A4; margin:9mm 9mm; }
+
+    header .header-actions, .month-bar .nav-btn, .add-btn,
+    .row .remove-btn, .row-cat .remove-btn, .plan-item-row .remove-btn,
+    .cat-toggle-btn, .cloud-toggle-btn{
+      display:none !important;
+    }
+    #cloudSyncCard, #cloudOverlay{ display:none !important; }
+    #toast, .undo-bar{ display:none !important; }
+    .card-collapse-controls{ display:none !important; }
+    .collapsible-card > h2{ cursor:default; }
+    .collapsible-card > h2::after{ display:none; }
+
+    *{ box-shadow:none !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body{ background:#fff; font-size:10px; line-height:1.2; }
+
+    header{ position:static; padding:0 0 4px; box-shadow:none; }
+    header h1{ font-size:1rem; }
+    header p{ font-size:.6rem; color:var(--text-muted); }
+
+    .month-bar{ display:none; }
+
+    /* Elke aparte .layout-wrapper (dashboard, jaaroverzicht, categorieën,
+       hoofdkolom) heeft op scherm ruime buitenmarges nodig; op papier stapelen
+       ze zich anders op tot veel verloren witruimte. */
+    .layout{ max-width:none; padding:3px 0; gap:0; }
+
+    /* De sticky samenvatting is een aparte kolom naast een lang stuk inhoud;
+       browsers pagineren zo'n ongelijke CSS-grid onbetrouwbaar (de kolom werd
+       op elke pagina herhaald). Daarom in print verborgen ten gunste van het
+       print-only kerncijferblok bovenaan, en de resterende kolom altijd
+       volle breedte. */
+    .summary{ display:none !important; }
+    .layout{ grid-template-columns:1fr !important; }
+
+    .print-summary{
+      display:block;
+      margin:0 0 6px;
+      padding:7px 9px;
+      border:1px solid var(--border);
+      border-radius:5px;
+      background:#F7F9FB;
+      break-inside:avoid;
+      page-break-inside:avoid;
+    }
+    .print-summary-heading{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+      margin-bottom:5px;
+      border-bottom:1px solid var(--border);
+      padding-bottom:4px;
+    }
+    .print-summary-heading h2{
+      margin:0;
+      font-size:.88rem;
+      color:var(--primary-dark);
+    }
+    .print-summary-heading span{
+      font-size:.6rem;
+      color:var(--text-muted);
+      white-space:nowrap;
+    }
+    .print-kpi-row{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:8px;
+    }
+    .print-kpi{
+      border-left:3px solid var(--primary);
+      padding:1px 0 1px 8px;
+    }
+    .print-kpi-balance{ border-left-color:var(--positive); }
+    .print-kpi-balance.negative{ border-left-color:var(--negative); }
+    .print-kpi-label{
+      display:block;
+      font-size:.58rem;
+      color:var(--text-muted);
+      text-transform:uppercase;
+      letter-spacing:.3px;
+      margin-bottom:1px;
+    }
+    .print-kpi-value{
+      display:block;
+      font-size:.88rem;
+      font-weight:700;
+      color:var(--text);
+    }
+
+    /* Beknopte kleuraccenten per sectie, voor snelle visuele herkenning op papier. */
+    #incomeCard{ border-left:3px solid var(--positive); }
+    #fixedCard{ border-left:3px solid var(--accent-fixed); }
+    #variableCard{ border-left:3px solid var(--accent-variable); }
+    #dashboardCard{ border-left:3px solid var(--primary); }
+
+    .card{
+      break-inside:avoid;
+      page-break-inside:avoid;
+      border:1px solid #ccc;
+      border-radius:3px;
+      padding:6px 9px !important;
+      margin-bottom:5px !important;
+    }
+    .card h2{ font-size:.76rem !important; margin-bottom:0 !important; }
+    .card .sub{ display:none !important; }
+
+    .row, .row-cat, .plan-item-row{ margin-bottom:2px !important; }
+
+    /* Forceer de compacte bureaubladindeling van de invoerrijen, met !important:
+       op mobiel wordt de PDF gerenderd op de smalle schermbreedte, waardoor de
+       mobiele "gestapelde kaart"-weergave van vaste/variabele lasten en
+       planningsposten anders ook in de PDF verschijnt — met veel te grote,
+       meerregelige rijen tot gevolg. */
+    .row, .row-cat, .plan-item-row{
+      display:grid !important;
+      grid-template-rows:auto !important;
+      align-items:center !important;
+      gap:4px !important;
+      border:none !important;
+      background:none !important;
+      padding:0 !important;
+    }
+    .row{ grid-template-columns:1fr 80px !important; }
+    .row-cat{ grid-template-columns:1fr 72px 100px !important; }
+    .plan-item-row{ grid-template-columns:1.2fr 62px 76px 64px 72px !important; }
+    .row-cat .cat-name-field, .row-cat input,
+    .plan-item-row .plan-name-field, .plan-item-row input, .plan-item-row select{
+      grid-column:auto !important;
+      grid-row:auto !important;
+    }
+    .card:has(#initialSavings) > div[style*="grid-template-columns:1fr 1fr"]{
+      grid-template-columns:1fr 1fr !important;
+      gap:6px !important;
+    }
+    .row input, .row-cat input, .plan-item-row input, .plan-item-row select,
+    .single-field input, .cm-name-input, .cm-budget-input{
+      padding:2px 5px !important;
+      min-height:0 !important;
+      font-size:.7rem !important;
+      border-color:#ccc;
+    }
+    .single-field label{ font-size:.66rem !important; margin-bottom:1px !important; }
+    .cm-header-row, .cm-row{ font-size:.66rem; padding:2px 2px; }
+    #yearOverviewCard, #categoryManagerCard{ border-left:3px solid var(--primary); }
+    .section-total{ margin-top:2px !important; padding-top:2px !important; font-size:.68rem !important; }
+
+    /* Dashboardgrafieken: kleiner en altijd volledig (geen "toon meer"-knop op papier) */
+    .donut-grid{ gap:6px; }
+    .donut-wrap{ gap:6px; }
+    .donut-wrap svg{ width:72px; height:72px; }
+    .donut-legend-item{ padding:0; font-size:.62rem; }
+    .cat-bar-row{ margin-bottom:2px; }
+    .cat-bar-label{ font-size:.66rem; margin-bottom:1px; }
+    .cat-bar-track{ height:4px; }
+
+    /* Tabellen: herhaal kopregel op elke pagina en voorkom afgebroken rijen */
+    table{ font-size:.66rem; }
+    thead{ display:table-header-group; }
+    tr{ break-inside:avoid; page-break-inside:avoid; }
+    .forecast-table th, .forecast-table td,
+    .history-table th, .history-table td{ padding:2px 3px; }
+
+    /* Planning/historie kunnen lang worden: laat die kaarten wél over een
+       paginabreuk lopen (i.p.v. de hele kaart naar de volgende pagina te
+       duwen), terwijl losse rijen intact blijven dankzij de regel hierboven. */
+    #planningCard, #historyCard{
+      break-inside:auto;
+      page-break-inside:auto;
+    }
+
+    /* Selectie/detailpaneel zijn interactieve schermhulpmiddelen, niet bedoeld
+       voor het statische rapport. */
+    .category-detail-panel{ display:none !important; }
+    [data-cd-id].cd-dim{ opacity:1 !important; }
+    .donut-legend-item.cd-active, .cat-bar-row.cd-active{ background:none !important; }
+
+    footer{
+      display:block;
+      text-align:left;
+      font-size:.56rem;
+      padding:5px 0 0;
+      margin-top:3px;
+      border-top:1px solid var(--border);
+    }
+    .footer-screen-text{ display:none; }
+    .footer-print-text{ display:inline; }
+  }
+
+/* Cloud instellingen als uitschuifbare sidebar */
+.cloud-layout{padding:0 !important; height:0; overflow:visible;}
+#cloudSyncCard{
+  position:fixed; top:0; right:0; width:min(460px, 92vw); height:100vh;
+  margin:0; border-radius:0; z-index:1001; overflow-y:auto;
+  box-shadow:-8px 0 30px rgba(0,0,0,.18);
+  transform:translateX(105%); transition:transform .22s ease;
+}
+#cloudSyncCard.cloud-open{transform:translateX(0);}
+.cloud-overlay{
+  position:fixed; inset:0; background:rgba(15,23,42,.38); z-index:1000;
+  opacity:0; pointer-events:none; transition:opacity .22s ease;
+}
+.cloud-overlay.cloud-open{opacity:1; pointer-events:auto;}
+.cloud-sidebar-title{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+.cloud-sidebar-title h2{margin:0;}
+.cloud-close-btn{
+  border:0; background:transparent; color:var(--text-muted); font-size:2rem;
+  line-height:1; width:44px; height:44px; cursor:pointer; border-radius:8px;
+}
+.cloud-close-btn:hover{background:#F0F2F5; color:var(--text);}
+body.cloud-sidebar-active{overflow:hidden;}
+
+/* =========================================================
+   Mobile UI optimization v13
+   Focus: one-hand use, touch targets, compact navigation,
+   readable financial summary and no horizontal overflow.
+   ========================================================= */
+button, input, select { -webkit-tap-highlight-color: transparent; }
+button, input, select { touch-action: manipulation; }
+
+@media (max-width: 760px){
+  #cloudSyncCard{width:100%;}
+  .cloud-sidebar-title{position:sticky; top:0; background:var(--card); padding-bottom:8px; z-index:2;}
+
+  :root{ --radius:12px; }
+  body{
+    font-size:16px;
+    padding-bottom:0;
+    overflow-x:hidden;
+  }
+
+  header{
+    position:sticky;
+    top:0;
+    z-index:900;
+    padding:12px 14px;
+    gap:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.12);
+  }
+  header h1{font-size:1.15rem;}
+  header p{font-size:.74rem; margin-top:2px;}
+  .header-actions{
+    width:100%;
+    gap:7px;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    padding-bottom:2px;
+    scrollbar-width:none;
+  }
+  .header-actions::-webkit-scrollbar{display:none;}
+  .header-actions .print-btn{
+    flex:0 0 auto;
+    min-height:42px;
+    padding:9px 12px;
+    font-size:.78rem;
+    white-space:nowrap;
+  }
+
+  .month-bar{
+    margin:10px 0 0;
+    padding:0 12px;
+  }
+  .month-bar > span{
+    display:block;
+    width:100%;
+    padding:10px 12px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:.82rem !important;
+  }
+
+  .layout,
+  .layout[style]{
+    display:block !important;
+    width:100%;
+    max-width:none;
+    padding:10px 12px !important;
+    margin:0;
+  }
+
+  .card{
+    padding:14px;
+    margin-bottom:12px;
+    border-radius:12px;
+  }
+  .card h2{font-size:.98rem;}
+  .card .sub{
+    font-size:.76rem;
+    line-height:1.45;
+    margin-bottom:12px;
+  }
+
+  /* Cloud setup is useful, but should not dominate the phone screen. */
+  #cloudSyncCard{
+    padding:12px;
+  }
+  #cloudSyncCard .sub{margin-bottom:10px;}
+  #cloudSyncCard > div[style*="display:grid"]{
+    gap:10px !important;
+  }
+  #cloudSyncCard > div[style*="grid-template-columns:160px"]{
+    grid-template-columns:1fr !important;
+  }
+  #cloudSyncCard .print-btn{
+    min-height:44px;
+    flex:1 1 100%;
+  }
+  #cloudHelp pre{
+    max-height:220px;
+    overflow:auto;
+  }
+
+  /* Touch-friendly form controls. */
+  input, select, .row input, .row-cat input, .plan-item-row input, .plan-item-row select{
+    min-height:44px;
+    font-size:16px !important;
+    border-radius:9px !important;
+  }
+  input[type="number"]{
+    text-align:right;
+  }
+  .single-field input{min-height:46px;}
+  .single-field label{font-size:.78rem; margin-bottom:5px;}
+
+  .row{
+    grid-template-columns:minmax(0,1fr) 105px 44px;
+    gap:7px;
+    margin-bottom:9px;
+  }
+  .row input[type="text"]{min-width:0;}
+  .row .remove-btn,
+  .row-cat .remove-btn,
+  .plan-item-row .remove-btn{
+    width:44px;
+    height:44px;
+    min-width:44px;
+    font-size:1rem;
+    border-radius:9px;
+  }
+
+  .row-cat{
+    grid-template-columns:minmax(0,1fr) 105px 44px;
+    grid-template-rows:auto auto;
+    gap:7px;
+    margin-bottom:10px;
+  }
+  .row-cat .cat-name-field{grid-column:1; grid-row:1;}
+  .row-cat input[type="number"]{grid-column:2; grid-row:1;}
+  .row-cat .remove-btn{grid-column:3; grid-row:1;}
+  .row-cat input[type="text"]:not(.cat-name-field){grid-column:1 / -1; grid-row:2;}
+
+  .add-btn{
+    width:100%;
+    min-height:44px;
+    padding:9px 12px;
+    border-radius:9px;
+    font-size:.84rem;
+  }
+  .section-total{
+    margin-top:10px;
+    padding-top:9px;
+    font-size:.8rem;
+  }
+
+  /* Savings fields: stack instead of squeezing two controls. */
+  .card:has(#initialSavings) > div[style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr !important;
+    gap:9px !important;
+  }
+
+  /* Planning: each future item becomes a compact mobile card. */
+  .plan-item-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 105px 44px;
+    grid-template-rows:auto auto auto;
+    gap:7px;
+    padding:10px;
+    margin-bottom:9px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#FAFBFC;
+  }
+  .plan-item-row .plan-name-field{grid-column:1 / -1; grid-row:1;}
+  .plan-item-row input[type="number"]{grid-column:1; grid-row:2;}
+  .plan-item-row select{grid-column:2; grid-row:2;}
+  .plan-item-row .remove-btn{grid-column:3; grid-row:2;}
+  .plan-item-row input[type="month"]{grid-column:1; grid-row:3;}
+  .plan-item-row input[type="date"]{grid-column:2 / -1; grid-row:3;}
+
+  /* Tables scroll inside their card rather than widening the page. */
+  .forecast-table,
+  .history-table{
+    min-width:600px;
+  }
+  #forecastTableWrap,
+  #historyWrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    margin:0 -4px;
+    padding:0 4px 5px;
+  }
+  .forecast-table th, .forecast-table td,
+  .history-table th, .history-table td{
+    white-space:nowrap;
+    padding:8px 7px;
+  }
+
+  /* Dashboard: show the important information first and avoid tiny legends. */
+  .donut-grid{gap:12px;}
+  .donut-block{
+    padding:10px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .donut-block:last-child{border-bottom:0;}
+  .donut-wrap{
+    justify-content:center;
+    gap:12px;
+  }
+  .donut-legend{
+    min-width:180px;
+    font-size:.78rem;
+  }
+  .donut-legend-item{padding:4px 0;}
+
+  /* Make the financial summary persistent and glanceable. */
+  .summary{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    top:auto;
+    z-index:850;
+    margin:0;
+    padding:0 8px 8px;
+    pointer-events:none;
+  }
+  .summary .card{
+    pointer-events:auto;
+    margin:0;
+    padding:10px 12px;
+    border-radius:14px 14px 0 0;
+    box-shadow:0 -4px 18px rgba(0,0,0,.14);
+  }
+  .summary .card h2{
+    display:none;
+  }
+  .summary-line{
+    display:none;
+  }
+  .summary-line.total{
+    display:flex;
+    border:0;
+    margin:0;
+    padding:0;
+    font-size:.78rem;
+    color:var(--text-muted);
+  }
+  .summary-line.total span:last-child{
+    color:var(--text);
+    font-weight:700;
+  }
+  .balance-box{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-top:7px;
+    padding:8px 10px;
+    border-radius:9px;
+    text-align:left;
+  }
+  .balance-box .label{
+    font-size:.68rem;
+  }
+  .balance-box .amount{
+    font-size:1.18rem;
+    line-height:1;
+  }
+  .summary .bar-wrap,
+  .summary .savings-result,
+  .summary .legend{
+    display:none;
+  }
+  body{
+    padding-bottom:100px;
+  }
+
+  footer{
+    font-size:.68rem;
+    line-height:1.4;
+    padding:12px 14px 110px;
+  }
+
+  .toast{
+    bottom:105px;
+    max-width:calc(100vw - 24px);
+    font-size:.78rem;
+  }
+}
+
+@media (max-width:390px){
+  header{padding:10px 11px;}
+  .layout,.layout[style]{padding-left:9px !important; padding-right:9px !important;}
+  .card{padding:12px;}
+  .row,.row-cat,.plan-item-row{gap:6px;}
+  .row,.row-cat{grid-template-columns:minmax(0,1fr) 96px 42px;}
+  .plan-item-row{grid-template-columns:minmax(0,1fr) 96px 42px;}
+  .header-actions .print-btn{padding-left:10px; padding-right:10px;}
+}
+
+@media (max-width:760px) and (min-height:700px){
+  /* Keep the fixed summary compact on taller phones as well. */
+  .summary .card{padding-top:9px; padding-bottom:9px;}
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Budgetbeheer</h1>
+    <p>Overzicht van inkomsten, lasten en spaarplan — bijgewerkt in realtime</p>
+  </div>
+  <div class="header-actions">
+    <button class="print-btn" onclick="quickCloudSave()" title="Slaat de huidige gegevens direct op naar je cloud-endpoint">☁️ Opslaan</button>
+    <button class="print-btn" onclick="quickCloudLoad()" title="Haalt de laatste versie op vanuit je cloud-endpoint">⬇️ Laden</button>
+    <button class="print-btn" onclick="exportJson()">💾 Exporteer back-up (JSON)</button>
+    <button class="print-btn" onclick="exportCsv()">📊 Exporteer CSV</button>
+    <button class="print-btn" onclick="document.getElementById('importJsonInput').click()">📂 Importeer back-up</button>
+    <input type="file" id="importJsonInput" accept="application/json" style="display:none;" onchange="importJson(event)">
+    <button class="print-btn cloud-toggle-btn" onclick="toggleCloudSidebar()">⚙️ Cloud-instellingen</button>
+    <button class="print-btn danger-btn" onclick="clearAllData()">🗑️ Leegmaken</button>
+    <button class="print-btn" onclick="window.print()">Exporteer naar PDF</button>
+  </div>
+</header>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="undoBar" class="undo-bar" role="status" aria-live="polite">
+  <span id="undoBarText"></span>
+  <button type="button" onclick="undoLastClear()">Ongedaan maken</button>
+</div>
+
+<div class="month-bar">
+  <span style="font-size:.85rem; color:var(--text-muted);">Huidige maand: <strong id="currentMonthLabel" style="color:var(--text);"></strong> — wordt automatisch bijgewerkt</span>
+</div>
+
+<div class="card-collapse-controls">
+  <button type="button" onclick="expandAllCards()">▾ Alles uitklappen</button>
+  <button type="button" onclick="collapseAllCards()">▴ Alles inklappen</button>
+</div>
+
+<!-- Alleen zichtbaar bij afdrukken/PDF-export: compacte kerncijfers vooraan het rapport,
+     in plaats van de sticky samenvatting (die niet betrouwbaar paginerf over meerdere
+     afdrukpagina's). Wordt live bijgewerkt door renderTotals(). -->
+<div class="print-summary">
+  <div class="print-summary-heading">
+    <h2>Budgetoverzicht — <span id="printMonthLabel"></span></h2>
+    <span id="printGeneratedAt"></span>
+  </div>
+  <div class="print-kpi-row">
+    <div class="print-kpi">
+      <span class="print-kpi-label">Totaal inkomsten</span>
+      <span class="print-kpi-value" id="printSumIncome">€ 0,00</span>
+    </div>
+    <div class="print-kpi">
+      <span class="print-kpi-label">Totale lasten</span>
+      <span class="print-kpi-value" id="printSumExpenses">€ 0,00</span>
+    </div>
+    <div class="print-kpi print-kpi-balance" id="printBalanceKpi">
+      <span class="print-kpi-label">Vrij besteedbaar</span>
+      <span class="print-kpi-value" id="printBalanceAmount">€ 0,00</span>
+    </div>
+    <div class="print-kpi">
+      <span class="print-kpi-label">Nieuw spaarsaldo</span>
+      <span class="print-kpi-value" id="printNewSavingsBalance">€ 0,00</span>
+    </div>
+  </div>
+</div>
+
+<div id="cloudOverlay" class="cloud-overlay" onclick="toggleCloudSidebar()"></div>
+<div class="layout cloud-layout" style="grid-template-columns:1fr; padding-bottom:0;">
+  <div class="card" id="cloudSyncCard">
+    <div class="cloud-sidebar-title"><h2>Cloud-synchronisatie (optioneel)</h2><button type="button" class="cloud-close-btn" onclick="toggleCloudSidebar()" aria-label="Sluit cloud-instellingen">×</button></div>
+    <p class="sub">
+      Koppel deze tool aan een eigen cloudopslag (bijv. Google Sheets via Apps Script, Firebase, of JSONBin) zodat meerdere mensen
+      dezelfde gegevens kunnen bekijken en bewerken. Iedereen die meewerkt vult hieronder dezelfde endpoint-URL in.
+      <button class="add-btn" style="margin-left:6px; padding:2px 8px; font-size:.75rem;" onclick="toggleCloudHelp()">Hoe werkt dit? / Setup-instructies</button>
+    </p>
+
+    <div id="cloudHelp" style="display:none; font-size:.8rem; background:#F0F4F8; border-radius:8px; padding:12px 14px; margin-bottom:14px; line-height:1.55;">
+      <strong>Contract:</strong> deze tool doet een GET-verzoek om gegevens op te halen en een POST/PUT-verzoek (met de volledige data als JSON) om op te slaan.
+      Elke cloudprovider die dat ondersteunt werkt, zonder dat de tool zelf aangepast hoeft te worden.
+      <br><br>
+      <strong>Optie A — Google Sheets (via Apps Script, gratis):</strong>
+      Maak een nieuw Google Sheet → Extensies → Apps Script, plak onderstaande code, en implementeer als webapp (Uitvoeren als: Ik, Toegang: Iedereen):
+      <pre style="white-space:pre-wrap; background:#fff; border:1px solid var(--border); border-radius:6px; padding:8px; font-size:.72rem; overflow-x:auto;">function doGet(e){
+  var s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sheet1');
+  var val = s.getRange('A1').getValue() || '{}';
+  return ContentService.createTextOutput(val).setMimeType(ContentService.MimeType.JSON);
+}
+function doPost(e){
+  var s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sheet1');
+  s.getRange('A1').setValue(e.postData.contents);
+  return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON);
+}</pre>
+      Gebruik de gegenereerde webapp-URL hieronder als endpoint (methode: POST).
+      <br><br>
+      <strong>Optie B — Firebase Realtime Database (gratis tier):</strong> gebruik als endpoint
+      <code>https://JOUW-PROJECT.firebaseio.com/budget.json</code> en kies methode <strong>PUT</strong>. Geen extra headers nodig bij open regels (voor productiegebruik: beveiligingsregels instellen).
+      <br><br>
+      <strong>Optie C — JSONBin.io (gratis, geen code nodig):</strong> maak een bin aan op jsonbin.io, gebruik de bin-URL als endpoint (methode: PUT),
+      en zet in "Extra headers" bijvoorbeeld: <code>{"X-Master-Key":"jouw-sleutel","Content-Type":"application/json"}</code>.
+      <br><br>
+      <em>Let op: dit is eenvoudige synchronisatie ("laatste opslag wint"). Bij gelijktijdig bewerken door meerdere mensen kan de één de wijziging van de ander overschrijven.</em>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr; gap:8px;">
+      <div class="single-field">
+        <label for="cloudUrl">Endpoint-URL</label>
+        <input type="text" id="cloudUrl" placeholder="https://...">
+      </div>
+      <div style="display:grid; grid-template-columns:160px 1fr; gap:8px;">
+        <div class="single-field">
+          <label for="cloudMethod">Methode (opslaan)</label>
+          <select id="cloudMethod" style="width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:6px; font-family:inherit;">
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+          </select>
+        </div>
+        <div class="single-field">
+          <label for="cloudHeaders">Extra headers (optioneel, JSON)</label>
+          <input type="text" id="cloudHeaders" placeholder='{"X-Master-Key":"..."}'>
+        </div>
+      </div>
+      <p id="secretWarning" class="secret-warning">⚠️ Deze sleutel/URL wordt onversleuteld opgeslagen in de browseropslag (localStorage) van dit apparaat. Gebruik dit niet op een gedeelde of publieke computer.</p>
+      <label style="font-size:.8rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+        <input type="checkbox" id="cloudAutoSync"> Automatisch synchroniseren (elke 20 seconden opslaan en ophalen)
+      </label>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+      <button class="print-btn" style="background:var(--primary); color:#fff;" onclick="cloudSave()">☁️ Nu opslaan naar cloud</button>
+      <button class="print-btn" style="background:#fff; color:var(--primary); border:1px solid var(--primary);" onclick="cloudLoad()">⬇️ Nu laden vanuit cloud</button>
+    </div>
+    <p id="cloudStatus" style="font-size:.78rem; color:var(--text-muted); margin-top:8px;">Nog niet gesynchroniseerd.</p>
+  </div>
+</div>
+
+<datalist id="categoryOptions">
+  <option value="Wonen">
+  <option value="Verzekeringen">
+  <option value="Boodschappen">
+  <option value="Vervoer">
+  <option value="Abonnementen">
+  <option value="Vrije tijd">
+  <option value="Gezondheid">
+  <option value="Onderwijs">
+  <option value="Kinderen">
+  <option value="Sparen &amp; beleggen">
+  <option value="Overig">
+</datalist>
+
+<div class="layout" style="grid-template-columns:1fr;">
+  <div class="card collapsible-card" id="dashboardCard">
+    <h2 onclick="toggleCard('dashboardCard')">Dashboard — verdeling van lasten per categorie</h2>
+    <p class="sub">In één oogopslag de belangrijkste cijfers van deze maand. De grafieken eronder tonen de verdeling van je lasten per categorie.</p>
+
+    <div class="dashboard-kpis" aria-label="Belangrijkste maandcijfers">
+      <div class="kpi-card income"><span class="kpi-label">Inkomsten</span><span class="kpi-value" id="kpiIncome">€ 0,00</span></div>
+      <div class="kpi-card fixed"><span class="kpi-label">Vaste lasten</span><span class="kpi-value" id="kpiFixed">€ 0,00</span></div>
+      <div class="kpi-card variable"><span class="kpi-label">Variabele lasten</span><span class="kpi-value" id="kpiVariable">€ 0,00</span></div>
+      <div class="kpi-card balance" id="kpiBalanceCard"><span class="kpi-label">Vrij besteedbaar</span><span class="kpi-value" id="kpiBalance">€ 0,00</span></div>
+    </div>
+
+    <div class="donut-grid">
+      <div class="donut-block">
+        <h3>Vaste lasten per categorie</h3>
+        <div id="donutFixed"></div>
+      </div>
+      <div class="donut-block">
+        <h3>Variabele lasten per categorie</h3>
+        <div id="donutVariable"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px; border-top:1px solid var(--border); padding-top:16px;">
+      <h3 style="font-size:.78rem; color:var(--text-muted); margin:0 0 12px; text-transform:uppercase; letter-spacing:.3px; font-weight:600;">
+        Totaal per categorie (vaste + variabele lasten samen)
+      </h3>
+      <div id="categoryBarList"></div>
+      <button type="button" class="cat-toggle-btn" id="categoryToggleBtn" onclick="toggleCategoryDetail()" style="display:none;"></button>
+    </div>
+
+    <div id="categoryDetailPanel" class="category-detail-panel" style="display:none;">
+      <div class="category-detail-header">
+        <h3 id="categoryDetailTitle"></h3>
+        <button type="button" class="cd-close-btn" onclick="clearCategorySelection()" aria-label="Sluit details">✕</button>
+      </div>
+      <div id="categoryDetailBody"></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="layout">
+  <div>
+    <!-- Inkomsten -->
+    <div class="card collapsible-card" id="incomeCard">
+      <h2 onclick="toggleCard('incomeCard')">Inkomsten</h2>
+      <p class="sub">Voeg één of meerdere inkomstenbronnen toe voor deze maand.</p>
+      <div class="input-hints"><span>Omschrijving</span><span>Bedrag</span><span>Actie</span></div>
+      <div id="incomeRows"></div>
+      <button class="add-btn" onclick="addRow('income')">+ Inkomst toevoegen</button>
+      <div class="section-total">Totaal inkomsten: <strong id="incomeTotalLabel">€ 0,00</strong></div>
+    </div>
+
+    <!-- Variabele lasten -->
+    <div class="card collapsible-card" id="variableCard">
+      <h2 onclick="toggleCard('variableCard')">Variabele lasten</h2>
+      <p class="sub">Bijvoorbeeld boodschappen, benzine, uitgaan.</p>
+      <div class="input-hints"><span>Omschrijving</span><span>Bedrag</span><span>Actie</span></div>
+      <div id="variableRows"></div>
+      <button class="add-btn" onclick="addRow('variable')">+ Variabele last toevoegen</button>
+      <div class="section-total">Totaal variabele lasten: <strong id="variableTotalLabel">€ 0,00</strong></div>
+    </div>
+
+    <!-- Vaste lasten -->
+    <div class="card collapsible-card" id="fixedCard">
+      <h2 onclick="toggleCard('fixedCard')">Vaste lasten</h2>
+      <p class="sub">Bijvoorbeeld huur, hypotheek, verzekeringen, abonnementen.</p>
+      <div class="input-hints" style="grid-template-columns:1fr 120px 140px 32px;"><span>Omschrijving</span><span>Bedrag</span><span>Categorie</span><span>Actie</span></div>
+      <div id="fixedRows"></div>
+      <button class="add-btn" onclick="addRow('fixed')">+ Vaste last toevoegen</button>
+      <div class="section-total">Totaal vaste lasten: <strong id="fixedTotalLabel">€ 0,00</strong></div>
+    </div>
+
+    <!-- Planning: toekomstige in-/uitgaven -->
+    <div class="card collapsible-card" id="planningCard">
+      <h2 onclick="toggleCard('planningCard')">Planning — toekomstige in-/uitgaven</h2>
+      <p class="sub">Registreer verwachte toekomstige inkomsten of uitgaven: kies een maand, en vul optioneel een specifieke datum in voor extra precisie.</p>
+      <div id="planningRows"></div>
+      <button class="add-btn" onclick="addPlanItem()">+ Toekomstige post toevoegen</button>
+      <div class="section-total" id="planningTotalsWrap" style="text-align:left; margin-top:16px;">
+        <strong style="display:block; margin-bottom:8px; color:var(--text);">Prognose komende maanden</strong>
+        <div id="forecastTableWrap"></div>
+        <p class="savings-hint">Uitgaande van het huidige maandelijkse spaarplan, herhaald per maand, plus de hierboven geregistreerde posten.</p>
+      </div>
+    </div>
+
+    <!-- Historie -->
+    <div class="card collapsible-card" id="historyCard">
+      <h2 onclick="toggleCard('historyCard')">Maandhistorie</h2>
+      <p class="sub">Overzicht van eerdere maanden (automatisch bijgehouden).</p>
+      <div id="historyWrap">
+        <p class="history-empty">Nog geen andere maanden opgeslagen.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Samenvatting -->
+  <div class="summary">
+    <div class="card">
+      <h2>Samenvatting</h2>
+      <div class="summary-line"><span>Totaal inkomsten</span><span id="sumIncome">€ 0,00</span></div>
+      <div class="summary-line"><span>Totaal vaste lasten</span><span id="sumFixed">€ 0,00</span></div>
+      <div class="summary-line"><span>Totaal variabele lasten</span><span id="sumVariable">€ 0,00</span></div>
+      <div class="summary-line total"><span>Totale lasten</span><span id="sumExpenses">€ 0,00</span></div>
+
+      <div class="balance-box positive" id="balanceBox" role="status" aria-live="polite">
+        <span class="label">Vrij besteedbaar (voor sparen)</span>
+        <span class="amount" id="balanceAmount">€ 0,00</span>
+      </div>
+
+      <div class="bar-wrap">
+        <div class="bar-label"><span>Inkomsten vs. lasten</span><span id="barPercent">0%</span></div>
+        <div class="bar-track">
+          <div class="bar-fill-fixed" id="barFixed" style="width:0%"></div>
+          <div class="bar-fill-variable" id="barVariable" style="width:0%"></div>
+        </div>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--accent-fixed)"></i>Vaste lasten</span>
+          <span><i class="dot" style="background:var(--accent-variable)"></i>Variabele lasten</span>
+        </div>
+      </div>
+
+      <div class="savings-result">
+        Nieuw spaarsaldo na deze maand
+        <strong id="newSavingsBalance">€ 0,00</strong>
+      </div>
+      <div class="savings-result" id="remainingBox">
+        Resterend na lasten én spaarplan
+        <strong id="remainingAfterSavings">€ 0,00</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="footer-screen-text">Gegevens worden lokaal in je browser opgeslagen (localStorage) en niet gedeeld. Gebruik "Exporteer naar PDF" om een afdrukbare versie te bewaren.</span>
+  <span class="footer-print-text">Budgetbeheer — persoonlijk overzicht, automatisch gegenereerd. Bedragen zijn afgerond op hele centen.</span>
+</footer>
+
+<script>
+const STORAGE_KEY = 'budgetbeheer_state_v3';
+
+// store = {
+//   months: { "2026-08": {income:[], fixed:[], variable:[], initialSavings, savingsPlan} },  // huidige + eerdere maanden (historie)
+//   currentMonth: "2026-08",  // wordt altijd automatisch gelijkgehouden aan de echte huidige kalendermaand
+//   planning: [ {id, name, amount, type:'income'|'expense', month:"2026-09", date:"2026-09-15"} ],  // toekomstige posten
+//   categoryBudgets: { "Boodschappen": 400 }  // optioneel maandbudget per categorie
+// }
+let store = { months:{}, currentMonth:null, planning:[], categoryBudgets:{} };
+
+function uid(){ return 'id' + Math.random().toString(36).slice(2,10); }
+
+// --- Kleine hulpfuncties: debounce en toast-meldingen ---
+function debounce(fn, wait){
+  let timer = null;
+  return function(...args){
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
+
+let toastTimer = null;
+function showToast(msg){
+  const el = document.getElementById('toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+const saveStoreDebounced = debounce(() => saveStore(), 400);
+
+// --- In-/uitklappen van kaarten: puur een schermweergave-voorkeur, dus
+// losstaand van "store" (niet in JSON-back-up/cloud-sync). Blijft bewaard
+// in localStorage, zodat de gekozen indeling na herladen intact blijft.
+const CARD_COLLAPSE_KEY = 'budgetbeheer_collapsed_cards_v1';
+const COLLAPSIBLE_CARD_IDS = ['dashboardCard', 'incomeCard', 'variableCard', 'fixedCard', 'planningCard', 'historyCard'];
+let collapsedCards = {};
+
+function loadCollapsedCards(){
+  try{
+    const raw = localStorage.getItem(CARD_COLLAPSE_KEY);
+    if(raw){
+      collapsedCards = JSON.parse(raw) || {};
+    } else {
+      // Standaard ingeklapt bij een nieuwe/lege voorkeur: budgetten en het
+      // jaaroverzicht worden minder vaak gebruikt dan de rest.
+      collapsedCards = { dashboardCard: false };
+      saveCollapsedCards();
+    }
+  }catch(e){ collapsedCards = {}; }
+}
+
+function saveCollapsedCards(){
+  try{ localStorage.setItem(CARD_COLLAPSE_KEY, JSON.stringify(collapsedCards)); }catch(e){ /* negeer opslagfouten */ }
+}
+
+function applyCollapsedCards(){
+  COLLAPSIBLE_CARD_IDS.forEach(id => {
+    const card = document.getElementById(id);
+    if(card) card.classList.toggle('collapsed', !!collapsedCards[id]);
+  });
+}
+
+function toggleCard(cardId){
+  collapsedCards[cardId] = !collapsedCards[cardId];
+  saveCollapsedCards();
+  applyCollapsedCards();
+}
+
+function collapseAllCards(){
+  COLLAPSIBLE_CARD_IDS.forEach(id => { collapsedCards[id] = true; });
+  saveCollapsedCards();
+  applyCollapsedCards();
+}
+
+function expandAllCards(){
+  COLLAPSIBLE_CARD_IDS.forEach(id => { collapsedCards[id] = false; });
+  saveCollapsedCards();
+  applyCollapsedCards();
+}
+
+function emptyMonthData(prefillSavings, sourceData){
+  return {
+    income:   sourceData ? cloneRows(sourceData.income)   : [{id:uid(), name:'', amount:''}],
+    fixed:    sourceData ? cloneRows(sourceData.fixed)    : [{id:uid(), name:'', amount:'', category:''}],
+    variable: sourceData ? cloneRows(sourceData.variable) : [{id:uid(), name:'', amount:'', category:''}],
+    initialSavings: prefillSavings !== undefined ? prefillSavings : '',
+    savingsPlan: ''
+  };
+}
+
+function cloneRows(rows){
+  return rows.map(r => ({id: uid(), name: r.name, amount: r.amount, category: r.category || ''}));
+}
+
+// Wist alle maanden (inclusief historie), toekomstige planning, categorie-
+// budgetten en het spaarsaldo, en begint weer met een lege huidige maand.
+// Cloud-instellingen blijven staan — dat is losstaande configuratie, geen
+// budgetdata. Kort na het wissen kan dit nog ongedaan gemaakt worden.
+let lastClearSnapshot = null;
+let undoBarTimer = null;
+
+function clearAllData(){
+  const ok = confirm('Dit verwijdert alle maanden (incl. historie), geplande posten, categoriebudgetten en het spaarsaldo. Je kunt dit meteen daarna nog even ongedaan maken. Doorgaan?');
+  if(!ok) return;
+  lastClearSnapshot = JSON.parse(JSON.stringify(store));
+  const key = currentMonthKey();
+  store = {
+    months: { [key]: emptyMonthData() },
+    currentMonth: key,
+    planning: [],
+    categoryBudgets: {}
+  };
+  saveStore();
+  selectedCategoryDetailId = null;
+  categoryDetailExpanded = false;
+  loadMonthIntoFields();
+  render();
+  showUndoBar('Alle gegevens zijn gewist.');
+}
+
+function showUndoBar(msg){
+  const bar = document.getElementById('undoBar');
+  const text = document.getElementById('undoBarText');
+  if(!bar || !text) return;
+  text.textContent = msg;
+  bar.classList.add('show');
+  clearTimeout(undoBarTimer);
+  undoBarTimer = setTimeout(() => {
+    bar.classList.remove('show');
+    lastClearSnapshot = null;
+  }, 10000);
+}
+
+function undoLastClear(){
+  if(!lastClearSnapshot) return;
+  store = lastClearSnapshot;
+  lastClearSnapshot = null;
+  clearTimeout(undoBarTimer);
+  const bar = document.getElementById('undoBar');
+  if(bar) bar.classList.remove('show');
+  saveStore();
+  rolloverToCurrentMonth();
+  loadMonthIntoFields();
+  render();
+  showToast('Wissen ongedaan gemaakt.');
+}
+
+function nextMonthKey(key){
+  const [y, m] = key.split('-').map(Number);
+  const d = new Date(y, m, 1); // m is al 1-based, dit levert dus automatisch de volgende maand op
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function currentMonthKey(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function sortedMonthKeys(){
+  return Object.keys(store.months).sort();
+}
+
+function loadStore(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      if(parsed && parsed.months) store = parsed;
+    }catch(e){ /* negeer corrupte data */ }
+  }
+  if(!store.planning) store.planning = [];
+  if(!store.categoryBudgets) store.categoryBudgets = {};
+  rolloverToCurrentMonth();
+}
+
+// Zorgt dat store.currentMonth altijd de echte, actuele kalendermaand is.
+// Bij een overgang naar een nieuwe maand worden inkomsten/lasten automatisch
+// overgenomen van de meest recente vorige maand (via ensureMonth), zodat er
+// niets handmatig hoeft te gebeuren en geen aparte navigatie nodig is.
+function rolloverToCurrentMonth(){
+  const real = currentMonthKey();
+  if(store.currentMonth !== real){
+    ensureMonth(real);
+    store.currentMonth = real;
+  } else {
+    ensureMonth(store.currentMonth);
+  }
+}
+
+function ensureMonth(key){
+  if(!store.months[key]){
+    // stel spaarsaldo voor en neem inkomsten/lasten over van de meest recente eerdere maand
+    const keys = sortedMonthKeys().filter(k => k < key);
+    let prefill = '';
+    let sourceData = null;
+    if(keys.length){
+      const prevKey = keys[keys.length-1];
+      const prev = store.months[prevKey];
+      const prevInit = parseAmount(prev.initialSavings);
+      const prevPlan = parseAmount(prev.savingsPlan);
+      prefill = (prevInit + prevPlan).toFixed(2);
+      sourceData = prev;
+    }
+    store.months[key] = emptyMonthData(prefill, sourceData);
+  }
+}
+
+// Alleen-lezend opvragen voor weergavedoeleinden (maakt de maand NIET aan in de opslag)
+function peekMonth(key){
+  return store.months[key] || {income:[], fixed:[], variable:[], initialSavings:'', savingsPlan:''};
+}
+
+function saveStore(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+function fmt(n){
+  if(isNaN(n)) n = 0;
+  return n.toLocaleString('nl-NL', {style:'currency', currency:'EUR'});
+}
+
+function parseAmount(v){
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+}
+
+// Simpele HTML-escape voor vrije tekst (namen, categorieën) die met
+// string-concatenatie in innerHTML terechtkomt, zodat tekens als < > & "
+// de opmaak niet kunnen breken.
+function escapeHtml(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function monthLabel(key){
+  const [y,m] = key.split('-').map(Number);
+  const d = new Date(y, m-1, 1);
+  return d.toLocaleDateString('nl-NL', {month:'long', year:'numeric'});
+}
+
+const listConfig = {
+  income:   {container:'incomeRows', namePlaceholder:'Bron (bijv. Salaris)'},
+  fixed:    {container:'fixedRows', namePlaceholder:'Naam (bijv. Huur)'},
+  variable: {container:'variableRows', namePlaceholder:'Naam (bijv. Boodschappen)'}
+};
+
+function currentData(){ return store.months[store.currentMonth]; }
+
+const MONTH_NAMES = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+
+function monthLabelShort(key){
+  const [y,m] = key.split('-').map(Number);
+  return MONTH_NAMES[m-1].slice(0,3) + ' ' + y;
+}
+
+// --- Planningmodule: toekomstige eenmalige inkomsten/uitgaven ---
+function addPlanItem(){
+  store.planning.push({
+    id: uid(), name:'', amount:'', type:'expense',
+    month: nextMonthKey(store.currentMonth), date:''
+  });
+  renderPlanning();
+  saveStore();
+}
+
+function removePlanItem(id){
+  store.planning = store.planning.filter(p => p.id !== id);
+  renderPlanning();
+  saveStore();
+}
+
+function updatePlanField(id, field, value){
+  const item = store.planning.find(p => p.id === id);
+  if(item) item[field] = value;
+  const focusInfo = saveFocus();
+  renderPlanning();
+  restoreFocus(focusInfo);
+  saveStoreDebounced();
+}
+
+function renderPlanning(){
+  const wrap = document.getElementById('planningRows');
+  wrap.innerHTML = '';
+
+  if(store.planning.length === 0){
+    const p = document.createElement('p');
+    p.className = 'history-empty';
+    p.textContent = 'Nog geen toekomstige posten geregistreerd.';
+    wrap.appendChild(p);
+  }
+
+  // Gesorteerd op maand (en eventueel datum) zodat de dichtstbijzijnde post bovenaan staat
+  const sorted = [...store.planning].sort((a,b) => (a.month + (a.date||'')).localeCompare(b.month + (b.date||'')));
+
+  sorted.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'plan-item-row';
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'plan-name-field';
+    nameInput.placeholder = 'Omschrijving (bijv. vakantiegeld, nieuwe wasmachine)';
+    nameInput.value = item.name;
+    nameInput.dataset.trackId = 'plan-item-' + item.id + '-name';
+    nameInput.addEventListener('input', e => updatePlanField(item.id, 'name', e.target.value));
+
+    const amountInput = document.createElement('input');
+    amountInput.type = 'number';
+    amountInput.step = '0.01';
+    amountInput.min = '0';
+    amountInput.placeholder = 'Bedrag';
+    amountInput.value = item.amount;
+    amountInput.dataset.trackId = 'plan-item-' + item.id + '-amount';
+    amountInput.addEventListener('input', e => updatePlanField(item.id, 'amount', e.target.value));
+
+    const typeSelect = document.createElement('select');
+    ['expense','income'].forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t === 'income' ? 'Inkomst' : 'Uitgave';
+      if(item.type === t) opt.selected = true;
+      typeSelect.appendChild(opt);
+    });
+    typeSelect.addEventListener('change', e => updatePlanField(item.id, 'type', e.target.value));
+
+    const monthInput = document.createElement('input');
+    monthInput.type = 'month';
+    monthInput.value = item.month || '';
+    monthInput.addEventListener('change', e => updatePlanField(item.id, 'month', e.target.value));
+
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.title = 'Optioneel: specifieke datum';
+    dateInput.value = item.date || '';
+    dateInput.addEventListener('change', e => updatePlanField(item.id, 'date', e.target.value));
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.type = 'button';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Verwijderen';
+    removeBtn.addEventListener('click', () => removePlanItem(item.id));
+
+    const amt = parseAmount(item.amount);
+    if(amt > 0 && item.name.trim() === '') nameInput.classList.add('invalid');
+
+    row.appendChild(nameInput);
+    row.appendChild(amountInput);
+    row.appendChild(typeSelect);
+    row.appendChild(monthInput);
+    row.appendChild(dateInput);
+    row.appendChild(removeBtn);
+    wrap.appendChild(row);
+  });
+
+  renderForecast();
+}
+
+// Prognose voor de komende maanden: huidig spaarsaldo + maandelijks spaarplan (elke maand
+// herhaald) + het netto-effect van de geregistreerde toekomstige posten in die maand.
+function renderForecast(){
+  const wrapEl = document.getElementById('forecastTableWrap');
+  if(!wrapEl) return;
+
+  const horizon = 6;
+  const monthlyPlan = parseAmount(currentData().savingsPlan);
+  let runningBalance = parseAmount(currentData().initialSavings);
+  let key = store.currentMonth;
+
+  let html = '<table class="forecast-table"><thead><tr>' +
+    '<th>Maand</th><th>Gepland +</th><th>Gepland −</th><th>Netto</th><th>Verwacht saldo</th>' +
+    '</tr></thead><tbody>';
+
+  for(let i = 0; i < horizon; i++){
+    const items = store.planning.filter(p => p.month === key);
+    const plannedIncome = items.filter(p => p.type === 'income').reduce((a,p) => a + parseAmount(p.amount), 0);
+    const plannedExpense = items.filter(p => p.type === 'expense').reduce((a,p) => a + parseAmount(p.amount), 0);
+    const net = plannedIncome - plannedExpense;
+    runningBalance += monthlyPlan + net;
+
+    html += '<tr>' +
+      '<td>' + monthLabelShort(key) + (key === store.currentMonth ? ' (nu)' : '') + '</td>' +
+      '<td>' + fmt(plannedIncome) + '</td>' +
+      '<td>' + fmt(plannedExpense) + '</td>' +
+      '<td class="' + (net < 0 ? 'negative-cell' : '') + '">' + fmt(net) + '</td>' +
+      '<td class="' + (runningBalance < 0 ? 'negative-cell' : '') + '">' + fmt(runningBalance) + '</td>' +
+      '</tr>';
+
+    key = nextMonthKey(key);
+  }
+  html += '</tbody></table>';
+  wrapEl.innerHTML = html;
+}
+
+function addRow(type){
+  currentData()[type].push({id: uid(), name:'', amount:'', category:''});
+  render(); saveStoreDebounced();
+}
+
+function removeRow(type, id){
+  const data = currentData();
+  data[type] = data[type].filter(r => r.id !== id);
+  if(data[type].length === 0) data[type].push({id: uid(), name:'', amount:'', category:''});
+  render(); saveStoreDebounced();
+}
+
+function updateField(type, id, field, value, inputEl){
+  // Negatieve bedragen worden niet geaccepteerd (voorkomt onlogische totalen)
+  if(field === 'amount' && value !== '' && parseAmount(value) < 0){
+    if(inputEl) inputEl.value = '';
+    value = '';
+  }
+  const item = currentData()[type].find(r => r.id === id);
+  if(item) item[field] = value;
+
+  // Directe visuele validatie op het bewerkte veld, zonder de hele rij te herbouwen
+  if(item && inputEl){
+    const row = inputEl.closest('.row, .row-cat');
+    const nameInput = row ? row.querySelector('input[type="text"]') : null;
+    const amountInput = row ? row.querySelector('input[type="number"]') : null;
+    const amt = parseAmount(item.amount);
+    if(nameInput) nameInput.classList.toggle('invalid', amt > 0 && item.name.trim() === '');
+    if(amountInput) amountInput.classList.toggle('invalid', item.amount !== '' && amt < 0);
+  }
+
+  renderTotals();
+  saveStoreDebounced();
+}
+
+function renderList(type){
+  const cfg = listConfig[type];
+  const container = document.getElementById(cfg.container);
+  const hasCategory = (type === 'fixed' || type === 'variable');
+  container.innerHTML = '';
+  currentData()[type].forEach(item => {
+    const row = document.createElement('div');
+    row.className = hasCategory ? 'row-cat' : 'row';
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = cfg.namePlaceholder;
+    nameInput.value = item.name;
+    if(hasCategory) nameInput.className = 'cat-name-field';
+    nameInput.dataset.trackId = type + '-' + item.id + '-name';
+    nameInput.addEventListener('input', e => updateField(type, item.id, 'name', e.target.value, e.target));
+
+    const amountInput = document.createElement('input');
+    amountInput.type = 'number';
+    amountInput.step = '0.01';
+    amountInput.min = '0';
+    amountInput.placeholder = '0,00';
+    amountInput.value = item.amount;
+    amountInput.dataset.trackId = type + '-' + item.id + '-amount';
+    amountInput.addEventListener('input', e => updateField(type, item.id, 'amount', e.target.value, e.target));
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.type = 'button';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Verwijderen';
+    removeBtn.addEventListener('click', () => removeRow(type, item.id));
+
+    const amt = parseAmount(item.amount);
+    if(amt > 0 && item.name.trim() === '') nameInput.classList.add('invalid');
+    if(item.amount !== '' && amt < 0) amountInput.classList.add('invalid');
+
+    if(hasCategory){
+      const catInput = document.createElement('input');
+      catInput.type = 'text';
+      catInput.placeholder = 'Categorie';
+      catInput.setAttribute('list', 'categoryOptions');
+      catInput.value = item.category || '';
+      catInput.dataset.trackId = type + '-' + item.id + '-category';
+      catInput.addEventListener('input', e => updateField(type, item.id, 'category', e.target.value, e.target));
+
+      row.appendChild(nameInput);
+      row.appendChild(amountInput);
+      row.appendChild(catInput);
+      row.appendChild(removeBtn);
+    } else {
+      row.appendChild(nameInput);
+      row.appendChild(amountInput);
+      row.appendChild(removeBtn);
+    }
+    container.appendChild(row);
+  });
+}
+
+function sumList(type){
+  return currentData()[type].reduce((acc, r) => acc + parseAmount(r.amount), 0);
+}
+
+function monthTotals(key){
+  const d = store.months[key];
+  const totalIncome = d.income.reduce((a,r)=>a+parseAmount(r.amount),0);
+  const totalFixed = d.fixed.reduce((a,r)=>a+parseAmount(r.amount),0);
+  const totalVariable = d.variable.reduce((a,r)=>a+parseAmount(r.amount),0);
+  const totalExpenses = totalFixed + totalVariable;
+  const balance = totalIncome - totalExpenses;
+  const savingsPlan = parseAmount(d.savingsPlan);
+  const initialSavings = parseAmount(d.initialSavings);
+  const newSavingsBalance = initialSavings + savingsPlan;
+  return {totalIncome, totalExpenses, balance, savingsPlan, newSavingsBalance};
+}
+
+function renderHistory(){
+  const wrap = document.getElementById('historyWrap');
+  const keys = sortedMonthKeys();
+  if(keys.length <= 1){
+    wrap.innerHTML = '<p class="history-empty">Nog geen andere maanden opgeslagen. Wissel van maand hierboven om nieuwe maanden aan te maken.</p>';
+    return;
+  }
+  let html = '<table class="history-table"><thead><tr>' +
+    '<th>Maand</th><th>Inkomsten</th><th>Lasten</th><th>Saldo</th><th>Spaarplan</th><th>Spaarsaldo</th>' +
+    '</tr></thead><tbody>';
+  keys.forEach(key => {
+    const t = monthTotals(key);
+    const isCurrent = key === store.currentMonth;
+    html += '<tr class="' + (isCurrent ? 'current-row' : '') + '">' +
+      '<td>' + monthLabel(key) + (isCurrent ? ' (huidig)' : '') + '</td>' +
+      '<td>' + fmt(t.totalIncome) + '</td>' +
+      '<td>' + fmt(t.totalExpenses) + '</td>' +
+      '<td class="' + (t.balance < 0 ? 'negative-cell' : '') + '">' + fmt(t.balance) + '</td>' +
+      '<td>' + fmt(t.savingsPlan) + '</td>' +
+      '<td>' + fmt(t.newSavingsBalance) + '</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+// --- Dashboard: verdeling van vaste/variabele lasten per categorie ---
+function categoryPalette(){
+  return ['#2A5C8A','#1D7A4C','#C77F1A','#7C8DA6','#6B4FA0','#1A8FA6','#B3261E','#A64F8F','#4F7D2E','#8A5A2A'];
+}
+
+// Zorgt dat dezelfde categorienaam altijd dezelfde kleur krijgt, in alle grafieken.
+function getCategoryColor(cat){
+  // De verzamelpost "Overige (...)" krijgt altijd een neutrale grijstint,
+  // zodat direct duidelijk is dat dit geen eigen categorie is maar een optelling.
+  if(cat && cat.indexOf('Overige (') === 0) return '#A8B0BC';
+  const palette = categoryPalette();
+  let h = 0;
+  const str = cat || 'Overig';
+  for(let i = 0; i < str.length; i++){ h = (h * 31 + str.charCodeAt(i)) >>> 0; }
+  return palette[h % palette.length];
+}
+
+// Groepeert rijen per categorie én bewaart de losse posten, zodat er bij
+// selectie in een grafiek een detaillijst getoond kan worden.
+function groupItemsByCategory(rows){
+  const map = {};
+  rows.forEach(r => {
+    const cat = (r.category && r.category.trim()) || 'Overig';
+    const amt = parseAmount(r.amount);
+    if(amt <= 0) return;
+    if(!map[cat]) map[cat] = {total:0, items:[]};
+    map[cat].total += amt;
+    map[cat].items.push({name: (r.name && r.name.trim()) || '(naamloos)', amount: amt});
+  });
+  return map;
+}
+
+function mergeItemMaps(mapA, mapB){
+  const result = {};
+  [mapA, mapB].forEach(m => {
+    Object.entries(m).forEach(([cat, v]) => {
+      if(!result[cat]) result[cat] = {total:0, items:[]};
+      result[cat].total += v.total;
+      result[cat].items = result[cat].items.concat(v.items);
+    });
+  });
+  return result;
+}
+
+// --- Selecteerbare grafiekonderdelen: klik op een segment/legenda/balkje
+// toont de onderliggende posten in het detailpaneel. Registratie gebeurt bij
+// elke render opnieuw, met stabiele ID's (groep::categorie) zodat een actieve
+// selectie bij een volgende render (bv. na een bewerking) intact blijft.
+let categoryDetailRegistry = {};
+let selectedCategoryDetailId = null;
+
+function registerCategoryDetail(group, label, scopeLabel, items, total, isOverige){
+  const id = group + '::' + label;
+  categoryDetailRegistry[id] = {group, label, scopeLabel, items, total, isOverige: !!isOverige};
+  return id;
+}
+
+// Beperkt het aantal weergegeven categorieën zodat grafieken overzichtelijk
+// blijven, ook als er veel verschillende categorieën zijn. De rest wordt
+// samengevoegd tot één "Overige"-post (met de losse posten nog steeds
+// opvraagbaar via het detailpaneel).
+function buildCappedGroups(data, itemsMap, max, groupKey, scopeLabel){
+  const make = (label, val, items, isOverige) => ({
+    label, val, items,
+    id: registerCategoryDetail(groupKey, label, scopeLabel, items, val, isOverige)
+  });
+  if(data.length <= max){
+    return data.map(([cat, val]) => make(cat, val, itemsMap[cat].items, false));
+  }
+  const top = data.slice(0, max - 1).map(([cat, val]) => make(cat, val, itemsMap[cat].items, false));
+  const rest = data.slice(max - 1);
+  const restTotal = rest.reduce((a, [, v]) => a + v, 0);
+  const restItems = [];
+  rest.forEach(([cat]) => {
+    itemsMap[cat].items.forEach(it => restItems.push(Object.assign({category: cat}, it)));
+  });
+  top.push(make('Overige (' + rest.length + ')', restTotal, restItems, true));
+  return top;
+}
+
+function renderDonut(containerId, itemsMap, scopeLabel, groupKey){
+  const container = document.getElementById(containerId);
+  const data = Object.entries(itemsMap).map(([cat, v]) => [cat, v.total]).sort((a, b) => b[1] - a[1]);
+  const total = data.reduce((a, [, v]) => a + v, 0);
+
+  if(total <= 0){
+    container.innerHTML = '<p class="history-empty">Nog geen lasten met categorie en bedrag ingevuld.</p>';
+    return;
+  }
+
+  // Beperk tot maximaal 5 segmenten (rest -> "Overige") zodat de taart
+  // met veel categorieën niet in een wirwar van dunne plakjes verandert.
+  const groups = buildCappedGroups(data, itemsMap, 5, groupKey, scopeLabel);
+
+  const size = 140, stroke = 22, r = (size - stroke) / 2, c = 2 * Math.PI * r, cx = size / 2, cy = size / 2;
+  let acc = 0;
+  let svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">';
+  svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="' + stroke + '"/>';
+  groups.forEach(g => {
+    const frac = g.val / total;
+    const dash = frac * c;
+    const rotation = (acc / total) * 360 - 90;
+    svg += '<circle class="cd-segment" data-cd-id="' + g.id + '" data-cd-group="' + groupKey + '" onclick="selectCategoryDetail(\'' + g.id + '\')" cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + getCategoryColor(g.label) +
+      '" stroke-width="' + stroke + '" stroke-dasharray="' + dash + ' ' + (c - dash) + '" transform="rotate(' + rotation + ' ' + cx + ' ' + cy + ')"><title>' + escapeHtml(g.label) + ': ' + fmt(g.val) + ' — klik voor details</title></circle>';
+    acc += g.val;
+  });
+  svg += '<text x="' + cx + '" y="' + (cy - 4) + '" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text)">' + fmt(total) + '</text>';
+  svg += '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" font-size="10" fill="var(--text-muted)">totaal</text>';
+  svg += '</svg>';
+
+  let legend = '<div class="donut-legend">';
+  groups.forEach(g => {
+    const pct = Math.round((g.val / total) * 100);
+    legend += '<div class="donut-legend-item" data-cd-id="' + g.id + '" data-cd-group="' + groupKey + '" onclick="selectCategoryDetail(\'' + g.id + '\')" title="' + escapeHtml(g.label) + ': ' + fmt(g.val) + ' — klik voor details">' +
+      '<span class="cat-name"><i class="dot" style="background:' + getCategoryColor(g.label) + '"></i><span class="cat-name-text">' + escapeHtml(g.label) + '</span></span>' +
+      '<span>' + pct + '%</span>' +
+      '</div>';
+  });
+  legend += '</div>';
+
+  container.innerHTML = '<div class="donut-wrap">' + svg + legend + '</div>';
+}
+
+const CATEGORY_LIST_DEFAULT_MAX = 6;
+let categoryDetailData = [];
+let categoryDetailItemsMap = {};
+let categoryDetailExpanded = false;
+
+function renderBarRow(cat, val, total, groupKey){
+  const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+  const items = (categoryDetailItemsMap[cat] && categoryDetailItemsMap[cat].items) || [];
+  const id = registerCategoryDetail(groupKey, cat, 'Totaal per categorie', items, val, false);
+  return '<div class="cat-bar-row" data-cd-id="' + id + '" data-cd-group="' + groupKey + '" onclick="selectCategoryDetail(\'' + id + '\')" title="Klik voor details">' +
+    '<div class="cat-bar-label">' +
+    '<span class="cat-name"><i class="dot" style="background:' + getCategoryColor(cat) + '"></i><span class="cat-name-text">' + escapeHtml(cat) + '</span></span>' +
+    '<span class="cat-amount">' + fmt(val) + ' — ' + pct + '%</span>' +
+    '</div>' +
+    '<div class="cat-bar-track"><div class="cat-bar-fill" style="width:' + pct + '%; background:' + getCategoryColor(cat) + ';"></div></div>' +
+    '</div>';
+}
+
+function renderCategoryBarList(containerId, data){
+  const container = document.getElementById(containerId);
+  const toggleBtn = document.getElementById('categoryToggleBtn');
+  const total = data.reduce((a, [, v]) => a + v, 0);
+
+  if(total <= 0){
+    container.innerHTML = '<p class="history-empty">Nog geen lasten met categorie en bedrag ingevuld.</p>';
+    if(toggleBtn) toggleBtn.style.display = 'none';
+    return;
+  }
+
+  // Toon standaard alleen de grootste posten; de rest is met één klik
+  // op te vragen zodat de lijst niet meteen een lange, drukke opsomming wordt.
+  const showAll = categoryDetailExpanded || data.length <= CATEGORY_LIST_DEFAULT_MAX;
+  const visible = showAll ? data : data.slice(0, CATEGORY_LIST_DEFAULT_MAX);
+  const hiddenCount = data.length - visible.length;
+
+  container.innerHTML = visible.map(([cat, val]) => renderBarRow(cat, val, total, 'combined')).join('');
+
+  if(toggleBtn){
+    if(data.length <= CATEGORY_LIST_DEFAULT_MAX){
+      toggleBtn.style.display = 'none';
+    } else {
+      toggleBtn.style.display = 'inline-block';
+      toggleBtn.textContent = showAll
+        ? 'Toon minder'
+        : 'Toon alle ' + data.length + ' categorieën (+' + hiddenCount + ')';
+    }
+  }
+}
+
+function toggleCategoryDetail(){
+  categoryDetailExpanded = !categoryDetailExpanded;
+  renderCategoryBarList('categoryBarList', categoryDetailData);
+  applyCategorySelectionHighlight();
+}
+
+// Vult en toont/verbergt het detailpaneel voor de actief geselecteerde
+// categorie (of verbergt het als er niets (meer) geselecteerd is).
+function renderCategoryDetailPanel(){
+  const panel = document.getElementById('categoryDetailPanel');
+  const titleEl = document.getElementById('categoryDetailTitle');
+  const bodyEl = document.getElementById('categoryDetailBody');
+  if(!panel || !titleEl || !bodyEl) return;
+
+  const entry = selectedCategoryDetailId ? categoryDetailRegistry[selectedCategoryDetailId] : null;
+  if(!entry){
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  titleEl.textContent = entry.scopeLabel + ' — ' + entry.label;
+
+  const sortedItems = entry.items.slice().sort((a, b) => b.amount - a.amount);
+  let html = '';
+  if(sortedItems.length === 0){
+    html = '<p class="history-empty">Geen losse posten gevonden.</p>';
+  } else {
+    sortedItems.forEach(it => {
+      html += '<div class="cd-item-row"><span class="cd-item-name">' + escapeHtml(it.name) +
+        (entry.isOverige && it.category ? ' <span class="cd-item-subcat">(' + escapeHtml(it.category) + ')</span>' : '') +
+        '</span><span class="cd-item-amount">' + fmt(it.amount) + '</span></div>';
+    });
+  }
+  html += '<div class="cd-item-row cd-item-total"><span>Totaal</span><span>' + fmt(entry.total) + '</span></div>';
+  bodyEl.innerHTML = html;
+}
+
+// Markeert het geselecteerde segment/legenda-item/balkje visueel en dimt de
+// overige onderdelen binnen dezelfde grafiek (andere grafieken blijven
+// onaangetast).
+function applyCategorySelectionHighlight(){
+  const selectedGroup = selectedCategoryDetailId && categoryDetailRegistry[selectedCategoryDetailId]
+    ? categoryDetailRegistry[selectedCategoryDetailId].group : null;
+  document.querySelectorAll('[data-cd-id]').forEach(el => {
+    const group = el.getAttribute('data-cd-group');
+    const id = el.getAttribute('data-cd-id');
+    if(!selectedCategoryDetailId || group !== selectedGroup){
+      el.classList.remove('cd-dim', 'cd-active');
+      return;
+    }
+    if(id === selectedCategoryDetailId){
+      el.classList.add('cd-active');
+      el.classList.remove('cd-dim');
+    } else {
+      el.classList.add('cd-dim');
+      el.classList.remove('cd-active');
+    }
+  });
+}
+
+function selectCategoryDetail(id){
+  selectedCategoryDetailId = (selectedCategoryDetailId === id) ? null : id;
+  renderCategoryDetailPanel();
+  applyCategorySelectionHighlight();
+}
+
+function clearCategorySelection(){
+  selectedCategoryDetailId = null;
+  renderCategoryDetailPanel();
+  applyCategorySelectionHighlight();
+}
+
+function renderDashboard(){
+  categoryDetailRegistry = {};
+
+  const fixedMap = groupItemsByCategory(currentData().fixed);
+  const variableMap = groupItemsByCategory(currentData().variable);
+  renderDonut('donutFixed', fixedMap, 'Vaste lasten', 'fixedDonut');
+  renderDonut('donutVariable', variableMap, 'Variabele lasten', 'variableDonut');
+
+  // Vaste + variabele lasten gecombineerd, per categorie
+  categoryDetailItemsMap = mergeItemMaps(fixedMap, variableMap);
+  categoryDetailData = Object.entries(categoryDetailItemsMap).map(([cat, v]) => [cat, v.total]).sort((a, b) => b[1] - a[1]);
+  renderCategoryBarList('categoryBarList', categoryDetailData);
+
+  // Als de geselecteerde categorie door de bewerking niet meer bestaat
+  // (bv. hernoemd of verwijderd), sluit het detailpaneel netjes.
+  if(selectedCategoryDetailId && !categoryDetailRegistry[selectedCategoryDetailId]){
+    selectedCategoryDetailId = null;
+  }
+  renderCategoryDetailPanel();
+  applyCategorySelectionHighlight();
+
+  updateCategoryDatalist();
+}
+
+// --- Categoriebeheer: dynamische suggesties, hernoemen/samenvoegen, en
+// budgetten per categorie met voortgang t.o.v. de huidige maand. ---
+const CATEGORY_PRESET = ['Wonen','Verzekeringen','Boodschappen','Vervoer','Abonnementen','Vrije tijd','Gezondheid','Onderwijs','Kinderen','Sparen & beleggen','Overig'];
+
+function getAllCategoryNames(){
+  const set = new Set();
+  Object.values(store.months).forEach(m => {
+    (m.fixed || []).forEach(r => { const c = (r.category || '').trim(); if(c) set.add(c); });
+    (m.variable || []).forEach(r => { const c = (r.category || '').trim(); if(c) set.add(c); });
+  });
+  Object.keys(store.categoryBudgets || {}).forEach(c => { if(c) set.add(c); });
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl'));
+}
+
+function updateCategoryDatalist(){
+  const dl = document.getElementById('categoryOptions');
+  if(!dl) return;
+  const all = new Set(CATEGORY_PRESET);
+  getAllCategoryNames().forEach(c => all.add(c));
+  dl.innerHTML = Array.from(all).sort((a, b) => a.localeCompare(b, 'nl'))
+    .map(c => '<option value="' + escapeHtml(c) + '">').join('');
+}
+
+function currentMonthSpendByCategory(){
+  const map = {};
+  ['fixed', 'variable'].forEach(type => {
+    currentData()[type].forEach(r => {
+      const cat = (r.category && r.category.trim()) || 'Overig';
+      const amt = parseAmount(r.amount);
+      if(amt <= 0) return;
+      map[cat] = (map[cat] || 0) + amt;
+    });
+  });
+  return map;
+}
+
+function renderCategoryManager(){
+  const container = document.getElementById('categoryManagerList');
+  if(!container) return;
+  const names = getAllCategoryNames();
+  if(names.length === 0){
+    container.innerHTML = '<p class="history-empty">Nog geen categorieën gebruikt. Voeg er een toe bij een vaste of variabele last.</p>';
+    return;
+  }
+  const spend = currentMonthSpendByCategory();
+  let html = '';
+  names.forEach(cat => {
+    const safeCat = escapeHtml(cat);
+    const budget = store.categoryBudgets[cat];
+    const spent = spend[cat] || 0;
+    let progressHtml;
+    if(budget !== undefined && budget !== null && parseAmount(budget) > 0){
+      const budgetNum = parseAmount(budget);
+      const pct = Math.min(100, Math.round((spent / budgetNum) * 100));
+      const state = spent > budgetNum ? 'cm-over' : (pct >= 80 ? 'cm-warn' : 'cm-ok');
+      progressHtml = '<div class="cm-progress-track"><div class="cm-progress-fill ' + state + '" style="width:' + pct + '%;"></div></div>' +
+        '<span class="cm-progress-label">' + fmt(spent) + ' van ' + fmt(budgetNum) + (spent > budgetNum ? ' — over budget' : '') + '</span>';
+    } else {
+      progressHtml = '<span class="cm-no-budget">' + (spent > 0 ? fmt(spent) + ' besteed — ' : '') + 'geen budget ingesteld</span>';
+    }
+    html += '<div class="cm-row">' +
+      '<input type="text" class="cm-name-input" value="' + safeCat + '" data-old-cat="' + safeCat + '" onchange="renameCategoryEverywhere(this)" title="Wijzig om deze categorie overal te hernoemen of samen te voegen">' +
+      '<div class="cm-budget-input-wrap"><span>€</span><input type="number" class="cm-budget-input" min="0" step="1" placeholder="geen" value="' + (budget !== undefined && budget !== null ? budget : '') + '" data-cat="' + safeCat + '" onchange="setCategoryBudget(this)" title="Maandbudget voor deze categorie"></div>' +
+      '<div class="cm-progress">' + progressHtml + '</div>' +
+      '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// Hernoemt (of voegt samen, als de nieuwe naam al bestaat) een categorie in
+// alle maanden ineens — lost fragmentatie op zoals een verdwaalde tikfout
+// naast de juiste categorienaam.
+function renameCategoryEverywhere(inputEl){
+  const oldName = inputEl.dataset.oldCat;
+  const newName = inputEl.value.trim();
+  if(!newName || newName === oldName){
+    inputEl.value = oldName;
+    return;
+  }
+  const mergesWithExisting = getAllCategoryNames().some(c => c !== oldName && c.toLowerCase() === newName.toLowerCase());
+  const msg = mergesWithExisting
+    ? '"' + oldName + '" samenvoegen met de bestaande categorie "' + newName + '"? Dit geldt voor alle maanden en kan niet ongedaan worden gemaakt.'
+    : '"' + oldName + '" overal hernoemen naar "' + newName + '"? Dit geldt voor alle maanden.';
+  if(!confirm(msg)){
+    inputEl.value = oldName;
+    return;
+  }
+  Object.values(store.months).forEach(m => {
+    ['fixed', 'variable'].forEach(type => {
+      (m[type] || []).forEach(r => {
+        if((r.category || '').trim() === oldName) r.category = newName;
+      });
+    });
+  });
+  if(Object.prototype.hasOwnProperty.call(store.categoryBudgets, oldName)){
+    const oldBudget = store.categoryBudgets[oldName];
+    delete store.categoryBudgets[oldName];
+    // Bij samenvoegen: een bestaand budget op de doelcategorie behouden i.p.v. overschrijven.
+    if(!Object.prototype.hasOwnProperty.call(store.categoryBudgets, newName)){
+      store.categoryBudgets[newName] = oldBudget;
+    }
+  }
+  saveStore();
+  render();
+  showToast('Categorie hernoemd naar "' + newName + '".');
+}
+
+function setCategoryBudget(inputEl){
+  const cat = inputEl.dataset.cat;
+  const val = inputEl.value.trim();
+  if(val === ''){
+    delete store.categoryBudgets[cat];
+  } else {
+    store.categoryBudgets[cat] = parseAmount(val);
+  }
+  saveStore();
+  renderDashboard();
+}
+
+// --- Jaaroverzicht: trendlijn van inkomsten, lasten en saldo over de
+// beschikbare maandhistorie (max. de laatste 12 maanden). ---
+function sumRows(rows){
+  return (rows || []).reduce((a, r) => a + parseAmount(r.amount), 0);
+}
+
+function fmtCompact(n){
+  return '€' + Math.round(n).toLocaleString('nl-NL');
+}
+
+function renderYearOverview(){
+  const container = document.getElementById('yearOverviewChart');
+  if(!container) return;
+  const keys = sortedMonthKeys();
+  if(keys.length < 2){
+    container.innerHTML = '<p class="history-empty">Nog te weinig maanden voor een jaaroverzicht (minimaal 2 nodig).</p>';
+    return;
+  }
+
+  const shown = keys.slice(-12);
+  const points = shown.map(k => {
+    const m = store.months[k];
+    const income = sumRows(m.income);
+    const expenses = sumRows(m.fixed) + sumRows(m.variable);
+    return { key: k, income, expenses, balance: income - expenses };
+  });
+
+  const w = 640, h = 220, padL = 46, padR = 12, padT = 14, padB = 26;
+  const chartW = w - padL - padR, chartH = h - padT - padB;
+  const maxVal = Math.max(1, ...points.map(p => Math.max(p.income, p.expenses, Math.abs(p.balance))));
+
+  const xFor = i => padL + (points.length === 1 ? 0 : (i / (points.length - 1)) * chartW);
+  const yFor = v => padT + chartH - ((v + maxVal) / (2 * maxVal)) * chartH;
+  const yZero = yFor(0);
+
+  const linePoints = key => points.map((p, i) => xFor(i) + ',' + yFor(p[key])).join(' ');
+
+  let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" class="trend-svg" preserveAspectRatio="xMidYMid meet">';
+
+  [1, 0.5, 0, -0.5, -1].forEach(f => {
+    const y = yFor(f * maxVal);
+    svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (w - padR) + '" y2="' + y + '" stroke="var(--border)" stroke-width="1"/>';
+    svg += '<text x="' + (padL - 6) + '" y="' + (y + 3) + '" text-anchor="end" font-size="9" fill="var(--text-muted)">' + fmtCompact(f * maxVal) + '</text>';
+  });
+  svg += '<line x1="' + padL + '" y1="' + yZero + '" x2="' + (w - padR) + '" y2="' + yZero + '" stroke="var(--text-muted)" stroke-width="1.4"/>';
+
+  const drawLine = (key, color) => {
+    svg += '<polyline points="' + linePoints(key) + '" fill="none" stroke="' + color + '" stroke-width="2.2"/>';
+    points.forEach((p, i) => {
+      svg += '<circle cx="' + xFor(i) + '" cy="' + yFor(p[key]) + '" r="3" fill="' + color + '"><title>' + monthLabelShort(p.key) + ': ' + fmt(p[key]) + '</title></circle>';
+    });
+  };
+  drawLine('income', 'var(--positive)');
+  drawLine('expenses', 'var(--negative)');
+  drawLine('balance', 'var(--primary)');
+
+  points.forEach((p, i) => {
+    if(points.length > 8 && i % 2 === 1) return;
+    svg += '<text x="' + xFor(i) + '" y="' + (h - 8) + '" text-anchor="middle" font-size="9" fill="var(--text-muted)">' + monthLabelShort(p.key) + '</text>';
+  });
+
+  svg += '</svg>';
+
+  const legend = '<div class="trend-legend">' +
+    '<span><i class="dot" style="background:var(--positive)"></i>Inkomsten</span>' +
+    '<span><i class="dot" style="background:var(--negative)"></i>Lasten</span>' +
+    '<span><i class="dot" style="background:var(--primary)"></i>Saldo</span>' +
+    '</div>';
+
+  container.innerHTML = svg + legend;
+}
+
+
+function saveFocus(){
+  const el = document.activeElement;
+  if(el && el.tagName === 'INPUT' && el.dataset && el.dataset.trackId){
+    return {trackId: el.dataset.trackId, start: el.selectionStart, end: el.selectionEnd};
+  }
+  return null;
+}
+
+function restoreFocus(info){
+  if(!info) return;
+  const el = document.querySelector('[data-track-id="' + info.trackId + '"]');
+  if(el){
+    el.focus();
+    if(typeof info.start === 'number' && el.setSelectionRange){
+      try{ el.setSelectionRange(info.start, info.end); }catch(e){ /* niet toepasbaar op dit type veld */ }
+    }
+  }
+}
+
+// Werkt alleen totalen, balk, saldo, geschiedenis en spaarplan bij — zonder de
+// invoerrijen zelf opnieuw op te bouwen. Hierdoor blijft typen in een veld soepel
+// en verlies je nooit focus/cursorpositie (de focus-restore-hack is dus niet
+// meer nodig voor gewone tekst-/bedraginvoer).
+function renderTotals(){
+  const totalIncome = sumList('income');
+  const totalFixed = sumList('fixed');
+  const totalVariable = sumList('variable');
+  const totalExpenses = totalFixed + totalVariable;
+  const balance = totalIncome - totalExpenses;
+
+  document.getElementById('incomeTotalLabel').textContent = fmt(totalIncome);
+  document.getElementById('fixedTotalLabel').textContent = fmt(totalFixed);
+  document.getElementById('variableTotalLabel').textContent = fmt(totalVariable);
+
+  document.getElementById('sumIncome').textContent = fmt(totalIncome);
+  document.getElementById('sumFixed').textContent = fmt(totalFixed);
+  document.getElementById('sumVariable').textContent = fmt(totalVariable);
+  document.getElementById('sumExpenses').textContent = fmt(totalExpenses);
+  const kpiIncome = document.getElementById('kpiIncome');
+  const kpiFixed = document.getElementById('kpiFixed');
+  const kpiVariable = document.getElementById('kpiVariable');
+  const kpiBalance = document.getElementById('kpiBalance');
+  const kpiBalanceCard = document.getElementById('kpiBalanceCard');
+  if(kpiIncome) kpiIncome.textContent = fmt(totalIncome);
+  if(kpiFixed) kpiFixed.textContent = fmt(totalFixed);
+  if(kpiVariable) kpiVariable.textContent = fmt(totalVariable);
+  if(kpiBalance) kpiBalance.textContent = fmt(balance);
+  if(kpiBalanceCard) kpiBalanceCard.classList.toggle('negative', balance < 0);
+
+  const balanceBox = document.getElementById('balanceBox');
+  document.getElementById('balanceAmount').textContent = fmt(balance);
+  balanceBox.className = 'balance-box ' + (balance >= 0 ? 'positive' : 'negative');
+
+  const barFixed = document.getElementById('barFixed');
+  const barVariable = document.getElementById('barVariable');
+  const barPercent = document.getElementById('barPercent');
+  if(totalIncome > 0){
+    const fixedPct = Math.min(100, (totalFixed / totalIncome) * 100);
+    const variablePct = Math.min(100 - fixedPct, (totalVariable / totalIncome) * 100);
+    barFixed.style.width = fixedPct + '%';
+    barVariable.style.width = variablePct + '%';
+    barPercent.textContent = Math.round((totalExpenses/totalIncome)*100) + '% van inkomsten besteed';
+  } else {
+    barFixed.style.width = '0%';
+    barVariable.style.width = '0%';
+    barPercent.textContent = 'Geen inkomsten ingevuld';
+  }
+
+  // Spaarrekening/spaarplan is uit de zichtbare indeling verwijderd.
+  // Bestaande opgeslagen waarden blijven behouden voor compatibiliteit met oudere gegevens.
+  const initialSavings = parseAmount(currentData().initialSavings);
+  const savingsPlan = parseAmount(currentData().savingsPlan);
+  const newSavingsBalance = initialSavings + savingsPlan;
+  const remaining = balance - savingsPlan;
+
+  document.getElementById('newSavingsBalance').textContent = fmt(newSavingsBalance);
+  const remainingBox = document.getElementById('remainingAfterSavings');
+  remainingBox.textContent = fmt(remaining);
+  remainingBox.style.color = remaining < 0 ? 'var(--negative)' : 'var(--text)';
+
+  // Print-only kerncijferblok (zie .print-summary): meegevuld zodat de PDF-export
+  // altijd de actuele cijfers toont, ook al is dit blok op het scherm onzichtbaar.
+  const printMonthLabelEl = document.getElementById('printMonthLabel');
+  if(printMonthLabelEl) printMonthLabelEl.textContent = monthLabel(store.currentMonth);
+  const printSumIncomeEl = document.getElementById('printSumIncome');
+  if(printSumIncomeEl) printSumIncomeEl.textContent = fmt(totalIncome);
+  const printSumExpensesEl = document.getElementById('printSumExpenses');
+  if(printSumExpensesEl) printSumExpensesEl.textContent = fmt(totalExpenses);
+  const printBalanceAmountEl = document.getElementById('printBalanceAmount');
+  if(printBalanceAmountEl) printBalanceAmountEl.textContent = fmt(balance);
+  const printBalanceKpiEl = document.getElementById('printBalanceKpi');
+  if(printBalanceKpiEl) printBalanceKpiEl.classList.toggle('negative', balance < 0);
+  const printNewSavingsBalanceEl = document.getElementById('printNewSavingsBalance');
+  if(printNewSavingsBalanceEl) printNewSavingsBalanceEl.textContent = fmt(newSavingsBalance);
+
+  renderHistory();
+  renderForecast();
+  renderDashboard();
+}
+
+// Volledige render: bouwt ook de invoerrijen opnieuw op. Nodig bij structurele
+// wijzigingen (rij toevoegen/verwijderen, importeren, laden vanuit cloud).
+function render(){
+  const focusInfo = saveFocus();
+  renderList('income');
+  renderList('fixed');
+  renderList('variable');
+  renderPlanning();
+  renderTotals();
+  restoreFocus(focusInfo);
+}
+
+function loadMonthIntoFields(){
+  const d = currentData();
+  const initialSavingsEl = document.getElementById('initialSavings');
+  const savingsPlanEl = document.getElementById('savingsPlan');
+  if(initialSavingsEl) initialSavingsEl.value = d.initialSavings || '';
+  if(savingsPlanEl) savingsPlanEl.value = d.savingsPlan || '';
+  const label = document.getElementById('currentMonthLabel');
+  if(label) label.textContent = monthLabel(store.currentMonth);
+}
+
+function initSavingsFields(){
+  const initialSavingsEl = document.getElementById('initialSavings');
+  const savingsPlanEl = document.getElementById('savingsPlan');
+  if(initialSavingsEl) initialSavingsEl.addEventListener('input', () => { renderTotals(); saveStoreDebounced(); });
+  if(savingsPlanEl) savingsPlanEl.addEventListener('input', () => { renderTotals(); saveStoreDebounced(); });
+}
+
+// --- Cloud-synchronisatie (generiek: werkt met elke provider die GET/POST/PUT + JSON ondersteunt) ---
+const CLOUD_CONFIG_KEY = 'budgetbeheer_cloud_config_v1';
+let cloudConfig = { url:'', method:'POST', headers:'', autoSync:false };
+let cloudAutoSyncTimer = null;
+
+function updateSecretWarning(){
+  const el = document.getElementById('secretWarning');
+  if(!el) return;
+  el.classList.toggle('show', !!cloudConfig.headers);
+}
+
+function loadCloudConfig(){
+  const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
+  if(raw){
+    try{ cloudConfig = Object.assign(cloudConfig, JSON.parse(raw)); }catch(e){ /* negeer corrupte config */ }
+  }
+  document.getElementById('cloudUrl').value = cloudConfig.url || '';
+  document.getElementById('cloudMethod').value = cloudConfig.method || 'POST';
+  document.getElementById('cloudHeaders').value = cloudConfig.headers || '';
+  document.getElementById('cloudAutoSync').checked = !!cloudConfig.autoSync;
+  updateSecretWarning();
+  if(cloudConfig.autoSync) startAutoSync();
+}
+
+function saveCloudConfig(){
+  cloudConfig.url = document.getElementById('cloudUrl').value.trim();
+  cloudConfig.method = document.getElementById('cloudMethod').value;
+  cloudConfig.headers = document.getElementById('cloudHeaders').value.trim();
+  cloudConfig.autoSync = document.getElementById('cloudAutoSync').checked;
+  localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
+  updateSecretWarning();
+  if(cloudConfig.autoSync) startAutoSync(); else stopAutoSync();
+}
+
+function buildCloudHeaders(){
+  // text/plain i.p.v. application/json voorkomt een CORS-preflight-verzoek (OPTIONS),
+  // wat bij Google Apps Script webapps tot "Failed to fetch" leidt. Apps Script kan de
+  // inhoud alsnog gewoon als JSON-tekst uitlezen en verwerken.
+  const base = {'Content-Type':'text/plain;charset=utf-8'};
+  if(cloudConfig.headers){
+    try{ Object.assign(base, JSON.parse(cloudConfig.headers)); }
+    catch(e){ /* negeer ongeldige headers-JSON, val terug op basisheaders */ }
+  }
+  return base;
+}
+
+function setCloudStatus(msg){
+  document.getElementById('cloudStatus').textContent = msg;
+}
+
+async function cloudSave(){
+  if(!cloudConfig.url){ setCloudStatus('Vul eerst een endpoint-URL in.'); return false; }
+  try{
+    setCloudStatus('Bezig met opslaan naar cloud…');
+    const res = await fetch(cloudConfig.url, {
+      method: cloudConfig.method || 'POST',
+      headers: buildCloudHeaders(),
+      body: JSON.stringify(store)
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    setCloudStatus('Opgeslagen naar cloud om ' + new Date().toLocaleTimeString('nl-NL'));
+    return true;
+  }catch(e){
+    setCloudStatus('Opslaan mislukt: ' + e.message);
+    return false;
+  }
+}
+
+async function cloudLoad(manual){
+  if(!cloudConfig.url){ setCloudStatus('Vul eerst een endpoint-URL in.'); return false; }
+  if(manual){
+    const ok = confirm('Dit vervangt je lokale gegevens door de versie uit de cloud. Doorgaan?');
+    if(!ok) return false;
+  }
+  try{
+    setCloudStatus('Bezig met laden vanuit cloud…');
+    const res = await fetch(cloudConfig.url, { method:'GET', headers: buildCloudHeaders() });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(data && data.months){
+      store = data;
+      if(!store.planning) store.planning = [];
+      if(!store.categoryBudgets) store.categoryBudgets = {};
+      rolloverToCurrentMonth();
+      saveStore();
+      loadMonthIntoFields();
+      render();
+    }
+    setCloudStatus('Geladen vanuit cloud om ' + new Date().toLocaleTimeString('nl-NL'));
+    return true;
+  }catch(e){
+    setCloudStatus('Laden mislukt: ' + e.message);
+    return false;
+  }
+}
+
+// Snelle acties op het hoofdscherm: zelfde cloud-functies als in de instellingen-
+// sidebar, maar met directe terugkoppeling via een toast (de sidebar hoeft er
+// niet voor open te staan).
+async function quickCloudSave(){
+  if(!cloudConfig.url){ showToast('Stel eerst een cloud-URL in via ⚙️ Cloud-instellingen.'); return; }
+  const ok = await cloudSave();
+  showToast(ok ? 'Opgeslagen naar cloud.' : 'Opslaan mislukt — zie ⚙️ Cloud-instellingen voor details.');
+}
+
+async function quickCloudLoad(){
+  if(!cloudConfig.url){ showToast('Stel eerst een cloud-URL in via ⚙️ Cloud-instellingen.'); return; }
+  const confirmed = confirm('Dit vervangt je lokale gegevens door de versie uit de cloud. Doorgaan?');
+  if(!confirmed) return;
+  const ok = await cloudLoad(false);
+  showToast(ok ? 'Geladen vanuit cloud.' : 'Laden mislukt — zie ⚙️ Cloud-instellingen voor details.');
+}
+
+// Voert opslaan en laden na elkaar uit (niet gelijktijdig), zodat een nog lopende
+// save niet wordt overschreven door een load die verouderde cloud-data terugzet.
+// Als de gebruiker op dit moment actief in een veld typt, wordt het laden dat
+// cyclus overgeslagen om te voorkomen dat lopende invoer wordt overschreven.
+async function autoSyncTick(){
+  await cloudSave();
+  const active = document.activeElement;
+  const isTyping = !!(active && active.tagName === 'INPUT' && active.dataset && active.dataset.trackId);
+  if(!isTyping){
+    await cloudLoad(false);
+  }
+}
+
+function startAutoSync(){
+  stopAutoSync();
+  cloudAutoSyncTimer = setInterval(autoSyncTick, 20000);
+}
+
+function stopAutoSync(){
+  if(cloudAutoSyncTimer){ clearInterval(cloudAutoSyncTimer); cloudAutoSyncTimer = null; }
+}
+
+function toggleCloudHelp(){
+  const el = document.getElementById('cloudHelp');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function initCloudSync(){
+  loadCloudConfig();
+  ['cloudUrl','cloudMethod','cloudHeaders','cloudAutoSync'].forEach(id => {
+    document.getElementById(id).addEventListener('change', saveCloudConfig);
+  });
+}
+
+// --- Lokale JSON back-up (export/import), los van de cloud-synchronisatie ---
+function exportJson(){
+  try{
+    const payload = JSON.stringify(store, null, 2);
+    const blob = new Blob([payload], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'budgetbeheer-backup-' + stamp + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Back-up gedownload.');
+  }catch(e){
+    showToast('Exporteren mislukt: ' + e.message);
+  }
+}
+
+// Exporteert alle maanden als platte CSV (bruikbaar in Excel/Google Sheets),
+// met per post: maand, type, naam, categorie en bedrag.
+function csvCell(v){
+  const s = String(v == null ? '' : v);
+  return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function exportCsv(){
+  try{
+    const rows = [['Maand', 'Type', 'Naam', 'Categorie', 'Bedrag']];
+    sortedMonthKeys().forEach(key => {
+      const m = store.months[key];
+      const label = monthLabel(key);
+      (m.income || []).forEach(r => {
+        if(parseAmount(r.amount) <= 0 && !r.name) return;
+        rows.push([label, 'Inkomsten', r.name || '', '', parseAmount(r.amount).toFixed(2)]);
+      });
+      (m.fixed || []).forEach(r => {
+        if(parseAmount(r.amount) <= 0 && !r.name) return;
+        rows.push([label, 'Vaste last', r.name || '', r.category || '', parseAmount(r.amount).toFixed(2)]);
+      });
+      (m.variable || []).forEach(r => {
+        if(parseAmount(r.amount) <= 0 && !r.name) return;
+        rows.push([label, 'Variabele last', r.name || '', r.category || '', parseAmount(r.amount).toFixed(2)]);
+      });
+    });
+    const csv = '\uFEFF' + rows.map(r => r.map(csvCell).join(';')).join('\r\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'budgetbeheer-export-' + stamp + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('CSV-bestand gedownload.');
+  }catch(e){
+    showToast('CSV-export mislukt: ' + e.message);
+  }
+}
+
+function importJson(event){
+  const file = event.target.files && event.target.files[0];
+  event.target.value = ''; // zelfde bestand later opnieuw kunnen kiezen
+  if(!file) return;
+
+  const ok = confirm('Dit vervangt al je huidige gegevens door de inhoud van dit back-upbestand. Doorgaan?');
+  if(!ok) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || typeof data !== 'object' || !data.months){
+        throw new Error('Bestand bevat geen geldige Budgetbeheer-gegevens.');
+      }
+      store = data;
+      if(!store.planning) store.planning = [];
+      if(!store.categoryBudgets) store.categoryBudgets = {};
+      rolloverToCurrentMonth();
+      saveStore();
+      loadMonthIntoFields();
+      render();
+      showToast('Back-up geïmporteerd.');
+    }catch(e){
+      showToast('Importeren mislukt: ' + e.message);
+    }
+  };
+  reader.onerror = () => showToast('Bestand kon niet worden gelezen.');
+  reader.readAsText(file);
+}
+
+loadStore();
+loadMonthIntoFields();
+initSavingsFields();
+initCloudSync();
+loadCollapsedCards();
+render();
+applyCollapsedCards();
+
+// Bij het afdrukken/exporteren naar PDF altijd de volledige categorielijst
+// tonen: de "toon alles"-knop werkt niet op papier, dus zonder dit zou een
+// eventueel ingeklapte lijst stilzwijgend onvolledig in de PDF belanden.
+let categoryDetailPrePrintState = null;
+window.addEventListener('beforeprint', () => {
+  categoryDetailPrePrintState = categoryDetailExpanded;
+  if(!categoryDetailExpanded){
+    categoryDetailExpanded = true;
+    renderCategoryBarList('categoryBarList', categoryDetailData);
+  }
+  const genEl = document.getElementById('printGeneratedAt');
+  if(genEl){
+    const now = new Date();
+    genEl.textContent = 'Gegenereerd op ' + now.toLocaleDateString('nl-NL') + ' om ' + now.toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'});
+  }
+});
+window.addEventListener('afterprint', () => {
+  if(categoryDetailPrePrintState !== null && categoryDetailExpanded !== categoryDetailPrePrintState){
+    categoryDetailExpanded = categoryDetailPrePrintState;
+    renderCategoryBarList('categoryBarList', categoryDetailData);
+  }
+  categoryDetailPrePrintState = null;
+});
+
+function toggleCloudSidebar(){
+  const card = document.getElementById('cloudSyncCard');
+  const overlay = document.getElementById('cloudOverlay');
+  if(!card || !overlay) return;
+  const open = !card.classList.contains('cloud-open');
+  card.classList.toggle('cloud-open', open);
+  overlay.classList.toggle('cloud-open', open);
+  document.body.classList.toggle('cloud-sidebar-active', open);
+}
+</script>
+
+</body>
+</html>
